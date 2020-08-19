@@ -16,20 +16,13 @@ void MoronSaturator_Mono::set_drive(float drive, bool recalc)
 	if (recalc)	recalculate();
 }
 
-void MoronSaturator_Mono::set_ceiling_db(float ceiling_db, bool recalc)
-{
-	ceiling_db_ = ceiling_db;
-
-	if (recalc)	recalculate();
-}
-
 void MoronSaturator_Mono::recalculate()
 {
-	float c, limit, mix;
+	float c, limit, mix, drv_plus_1;
 
-	MoronSaturator::calculate(drive_, ceiling_db_, &c, &limit, &mix);
+	MoronSaturator::calculate(drive_, &c, &limit, &mix, &drv_plus_1);
 
-	saturator_.set(c, limit, mix);
+	saturator_.set(c, limit, mix, drv_plus_1);
 }
 
 }}}
