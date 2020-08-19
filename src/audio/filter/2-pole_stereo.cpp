@@ -31,7 +31,7 @@ void Filter_2Pole_Stereo::set_freq(float freq, bool recalc)
 
 void Filter_2Pole_Stereo::set_res(float res, bool recalc)
 {
-	res_ = 2.f * (1.f - std::min(0.96875f, res));
+	res_ = res;
 
 	if (recalc)	recalculate();
 }

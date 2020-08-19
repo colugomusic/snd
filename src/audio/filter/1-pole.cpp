@@ -5,14 +5,6 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-Filter_1Pole::Filter_1Pole()
-	: g_(0.f)
-	, zdfbk_val_(0.f)
-	, lp_(0.f)
-	, hp_(0.f)
-{
-}
-
 void Filter_1Pole::process_frame(float in)
 {
 	auto a = in - zdfbk_val_;

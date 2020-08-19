@@ -6,22 +6,11 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-Filter_2Pole::Filter_2Pole()
-	: w_div_2_(0.f)
-	, d_(0.f)
-	, e_(0.f)
-	, zdfbk_val_0_(0.f)
-	, zdfbk_val_1_(0.f)
-	, zdfbk_val_2_(0.f)
-	, lp_(0.f)
-	, bp_(0.f)
-	, hp_(0.f)
-{
-}
-
 void Filter_2Pole::process_frame(float in)
 {
-	auto a = in - zdfbk_val_0_;
+	h_ = zdfbk_val_1_ + (zdfbk_val_2_ * d_);
+
+	auto a = in - h_;
 
 	hp_ = a / e_;
 
@@ -33,7 +22,6 @@ void Filter_2Pole::process_frame(float in)
 
 	lp_ = c + zdfbk_val_1_;
 
-	zdfbk_val_0_ = zdfbk_val_1_ + (zdfbk_val_2_ * d_);
 	zdfbk_val_1_ = c + lp_;
 	zdfbk_val_2_ = b + bp_;
 }
@@ -47,6 +35,8 @@ void Filter_2Pole::set(float w_div_2, float d, float e)
 
 void Filter_2Pole::calculate(float sr, float freq, float res, float* w_div_2, float* d, float* e)
 {
+	res = 2.f * (1.f - std::min(0.96875f, res));
+
 	*w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(sr, freq);
 
 	*d = res + *w_div_2;

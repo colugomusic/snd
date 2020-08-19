@@ -6,20 +6,17 @@ namespace filter {
 
 class Filter_2Pole
 {
-	float w_div_2_;
-	float d_;
-	float e_;
-	float zdfbk_val_0_;
-	float zdfbk_val_1_;
-	float zdfbk_val_2_;
-	float lp_;
-	float bp_;
-	float hp_;
-
+	float w_div_2_ = 0.0f;
+	float d_ = 0.0f;
+	float e_ = 0.0f;
+	float h_ = 0.0f;
+	float zdfbk_val_1_ = 0.0f;
+	float zdfbk_val_2_ = 0.0f;
+	float lp_ = 0.0f;
+	float bp_ = 0.0f;
+	float hp_ = 0.0f;
 
 public:
-
-	Filter_2Pole();
 
 	float lp() const { return lp_; }
 	float bp() const { return lp_; }

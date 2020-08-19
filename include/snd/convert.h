@@ -8,7 +8,7 @@ namespace convert {
 template <class T>
 T dB2AF(T db)
 {
-	return std::pow(1.122018456459045, db);
+	return std::pow(T(1.122018456459045), db);
 }
 
 template <class T>

@@ -6,14 +6,12 @@ namespace filter {
 
 class Filter_1Pole
 {
-	float g_;
-	float zdfbk_val_;
-	float lp_;
-	float hp_;
+	float g_ = 0.0f;
+	float zdfbk_val_ = 0.0f;
+	float lp_ = 0.0f;
+	float hp_ = 0.0f;
 
 public:
-
-	Filter_1Pole();
 
 	float lp() const { return lp_; }
 	float hp() const { return hp_; }
