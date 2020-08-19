@@ -4,12 +4,16 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
 	./include/snd/ease.h
 	./include/snd/misc.h
+	./include/snd/audio/clipping.h
 	./include/snd/audio/filter/1-pole.h
 	./include/snd/audio/filter/1-pole_mono.h
 	./include/snd/audio/filter/1-pole_stereo.h
 	./include/snd/audio/filter/2-pole.h
 	./include/snd/audio/filter/2-pole_mono.h
 	./include/snd/audio/filter/2-pole_stereo.h
+	./include/snd/audio/ringmod/ring_modulator.h
+	./include/snd/audio/ringmod/ring_modulator_mono.h
+	./include/snd/audio/ringmod/ring_modulator_stereo.h
 	./include/snd/audio/saturator/moron_saturator.h
 	./include/snd/audio/saturator/moron_saturator_mono.h
 	./include/snd/audio/saturator/moron_saturator_stereo.h
@@ -22,6 +26,9 @@ list(APPEND SRC
 	./src/audio/filter/2-pole.cpp
 	./src/audio/filter/2-pole_mono.cpp
 	./src/audio/filter/2-pole_stereo.cpp
+	./src/audio/ringmod/ring_modulator.cpp
+	./src/audio/ringmod/ring_modulator_mono.cpp
+	./src/audio/ringmod/ring_modulator_stereo.cpp
 	./src/audio/saturator/moron_saturator.cpp
 	./src/audio/saturator/moron_saturator_mono.cpp
 	./src/audio/saturator/moron_saturator_stereo.cpp
