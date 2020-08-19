@@ -18,11 +18,11 @@ void MoronSaturator_Mono::set_drive(float drive, bool recalc)
 
 void MoronSaturator_Mono::recalculate()
 {
-	float c, limit, mix, drv_plus_1;
+	float c, limit, drv_plus_1;
 
-	MoronSaturator::calculate(drive_, &c, &limit, &mix, &drv_plus_1);
+	MoronSaturator::calculate(drive_, &c, &limit, &drv_plus_1);
 
-	saturator_.set(c, limit, mix, drv_plus_1);
+	saturator_.set(c, limit, drv_plus_1);
 }
 
 }}}

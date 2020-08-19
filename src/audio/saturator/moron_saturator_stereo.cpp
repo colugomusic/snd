@@ -23,12 +23,12 @@ void MoronSaturator_Stereo::set_drive(float drive, bool recalc)
 
 void MoronSaturator_Stereo::recalculate()
 {
-	float c, limit, mix, drv_plus_1;
+	float c, limit, drv_plus_1;
 
-	MoronSaturator::calculate(drive_, &c, &limit, &mix, &drv_plus_1);
+	MoronSaturator::calculate(drive_, &c, &limit, &drv_plus_1);
 
-	saturators_[0].set(c, limit, mix, drv_plus_1);
-	saturators_[1].set(c, limit, mix, drv_plus_1);
+	saturators_[0].set(c, limit, drv_plus_1);
+	saturators_[1].set(c, limit, drv_plus_1);
 }
 
 }}}
