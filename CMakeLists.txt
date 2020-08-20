@@ -2,6 +2,7 @@ project(snd)
 
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
+	./include/snd/dup_filter.h
 	./include/snd/ease.h
 	./include/snd/misc.h
 	./include/snd/audio/clipping.h
@@ -17,6 +18,8 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/audio/saturator/moron_saturator.h
 	./include/snd/audio/saturator/moron_saturator_mono.h
 	./include/snd/audio/saturator/moron_saturator_stereo.h
+	./include/snd/clock/clock_divider.h
+	./include/snd/control/smoother.h
 )
 
 list(APPEND SRC
@@ -32,6 +35,8 @@ list(APPEND SRC
 	./src/audio/saturator/moron_saturator.cpp
 	./src/audio/saturator/moron_saturator_mono.cpp
 	./src/audio/saturator/moron_saturator_stereo.cpp
+	./src/clock/clock_divider.cpp
+	./src/control/smoother.cpp
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
