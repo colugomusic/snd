@@ -9,8 +9,7 @@ namespace control {
 
 class Smoother
 {
-	
-	float sample_rate_;
+	int sample_rate_;
 	float time_;
 	float update_rate_;
 	int clock_divisor_;
@@ -22,19 +21,19 @@ class Smoother
 	float in_ = 0.0f;
 	DupFilter<float> dup_filter_;
 
-	static int calculate_clock_div(float SR, float update_rate);
-	static float calculate_clock_rate(float SR, int clock_div);
+	static int calculate_clock_div(int SR, float update_rate);
+	static float calculate_clock_rate(int SR, int clock_div);
 	static float calculate_ramp_inc(float time, float clock_rate);
 
 	void update();
 
 public:
 
-	Smoother(float SR, float time, float update_rate, std::function<void(float)> callback);
+	Smoother(int SR, float time, float update_rate, std::function<void(float)> callback);
 
 	void operator()(float in);
 
-	void set_sample_rate(float sr);
+	void set_sample_rate(int sr);
 };
 
 }}

@@ -33,11 +33,11 @@ void Filter_2Pole::set(float w_div_2, float d, float e)
 	e_ = e;
 }
 
-void Filter_2Pole::calculate(float sr, float freq, float res, float* w_div_2, float* d, float* e)
+void Filter_2Pole::calculate(int sr, float freq, float res, float* w_div_2, float* d, float* e)
 {
 	res = 2.f * (1.f - std::min(0.96875f, res));
 
-	*w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(sr, freq);
+	*w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(float(sr), freq);
 
 	*d = res + *w_div_2;
 	*e = (*d * *w_div_2) + 1.f;

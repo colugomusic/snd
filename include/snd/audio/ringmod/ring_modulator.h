@@ -21,7 +21,7 @@ public:
 	void set_amount(float amount);
 	void set_inc(double inc);
 
-	static double calculate_inc(float sr, float freq);
+	static double calculate_inc(int sr, float freq);
 };
 
 }}}

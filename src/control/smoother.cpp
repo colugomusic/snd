@@ -6,7 +6,7 @@
 namespace snd {
 namespace control {
 
-Smoother::Smoother(float SR, float time, float update_rate, std::function<void(float)> callback)
+Smoother::Smoother(int SR, float time, float update_rate, std::function<void(float)> callback)
 	: sample_rate_(SR)
 	, time_(time)
 	, update_rate_(update_rate)
@@ -18,14 +18,14 @@ Smoother::Smoother(float SR, float time, float update_rate, std::function<void(f
 {
 }
 
-int Smoother::calculate_clock_div(float SR, float update_rate)
+int Smoother::calculate_clock_div(int SR, float update_rate)
 {
-	return int(std::floor(SR * (1.0f / update_rate))) + 1;
+	return int(std::floor((1.0f / update_rate) * SR)) + 1;
 }
 
-float Smoother::calculate_clock_rate(float SR, int clock_div)
+float Smoother::calculate_clock_rate(int SR, int clock_div)
 {
-	return SR * (1.0f / clock_div);
+	return (1.0f / clock_div) * SR;
 }
 
 float Smoother::calculate_ramp_inc(float time, float clock_rate)
@@ -57,7 +57,7 @@ void Smoother::operator()(float in)
 	clock_divider_();
 }
 
-void Smoother::set_sample_rate(float sr)
+void Smoother::set_sample_rate(int sr)
 {
 	sample_rate_ = sr;
 

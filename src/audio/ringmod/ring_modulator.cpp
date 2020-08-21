@@ -30,7 +30,7 @@ void RingModulator::set_inc(double inc)
 	inc_ = inc;
 }
 
-double RingModulator::calculate_inc(float sr, float freq)
+double RingModulator::calculate_inc(int sr, float freq)
 {
 	return clipping::hard_clip((1.0 / sr) * freq, 0.5);
 }

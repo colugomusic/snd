@@ -14,7 +14,7 @@ void RingModulator_Mono::reset(float phase)
 	ringmod_.reset(phase);
 }
 
-void RingModulator_Mono::set_sr(float sr, bool recalc)
+void RingModulator_Mono::set_sr(int sr, bool recalc)
 {
 	sr_ = sr;
 

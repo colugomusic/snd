@@ -8,7 +8,7 @@ namespace filter {
 
 class Filter_2Pole_Mono
 {
-	float sr_;
+	int sr_;
 	float freq_;
 	float res_;
 
@@ -24,7 +24,7 @@ public:
 	void process_frame(float in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_res(float res, bool recalculate = true);
-	void set_sr(float sr, bool recalculate = true);
+	void set_sr(int sr, bool recalculate = true);
 	void recalculate();
 };
 

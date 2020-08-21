@@ -20,7 +20,7 @@ void RingModulator_Stereo::reset(float phase)
 	ringmod_[1].reset(phase);
 }
 
-void RingModulator_Stereo::set_sr(float sr, bool recalc)
+void RingModulator_Stereo::set_sr(int sr, bool recalc)
 {
 	sr_ = sr;
 

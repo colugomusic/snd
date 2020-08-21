@@ -8,7 +8,7 @@ namespace filter {
 
 class Filter_1Pole_Stereo
 {
-	float sr_;
+	int sr_;
 	float freq_;
 
 	Filter_1Pole filters_[2];
@@ -25,7 +25,7 @@ public:
 	void process_left(float in);
 	void process_right(float in);
 	void set_freq(float freq, bool recalculate = true);
-	void set_sr(float sr, bool recalculate = true);
+	void set_sr(int sr, bool recalculate = true);
 	void recalculate();
 };
 

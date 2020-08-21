@@ -24,7 +24,7 @@ public:
 	void process_frame(float in);
 	void set(float w_div_2, float d, float e);
 
-	static void calculate(float sr, float freq, float res, float* w_div_2, float* d, float* e);
+	static void calculate(int sr, float freq, float res, float* w_div_2, float* d, float* e);
 };
 
 }}}

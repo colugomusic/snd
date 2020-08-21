@@ -21,9 +21,9 @@ void Filter_1Pole::set_g(float g)
 	g_ = g;
 }
 
-float Filter_1Pole::calculate_g(float sr, float freq)
+float Filter_1Pole::calculate_g(int sr, float freq)
 {
-	auto w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(sr, freq);
+	auto w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(float(sr), freq);
 
 	return w_div_2 / (w_div_2 + 1.f);
 }

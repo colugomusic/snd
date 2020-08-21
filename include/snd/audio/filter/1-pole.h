@@ -18,7 +18,7 @@ public:
 	void process_frame(float in);
 	void set_g(float g);
 
-	static float calculate_g(float sr, float freq);
+	static float calculate_g(int sr, float freq);
 };
 
 }}}

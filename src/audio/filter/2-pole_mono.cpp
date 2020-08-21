@@ -6,7 +6,7 @@ namespace audio {
 namespace filter {
 
 Filter_2Pole_Mono::Filter_2Pole_Mono()
-	: sr_(44100.0f)
+	: sr_(44100)
 	, freq_(1.f)
 	, res_(0.f)
 {
@@ -31,7 +31,7 @@ void Filter_2Pole_Mono::set_res(float res, bool recalc)
 	if (recalc)	recalculate();
 }
 
-void Filter_2Pole_Mono::set_sr(float sr, bool recalc)
+void Filter_2Pole_Mono::set_sr(int sr, bool recalc)
 {
 	sr_ = sr;
 
