@@ -12,6 +12,12 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/audio/filter/2-pole.h
 	./include/snd/audio/filter/2-pole_mono.h
 	./include/snd/audio/filter/2-pole_stereo.h
+	./include/snd/audio/filter/2-pole_allpass.h
+	./include/snd/audio/filter/2-pole_allpass_mono.h
+	./include/snd/audio/filter/2-pole_allpass_stereo.h
+	./include/snd/audio/filter/2-pole_allpass_array.h
+	./include/snd/audio/filter/2-pole_allpass_array_mono.h
+	./include/snd/audio/filter/2-pole_allpass_array_stereo.h
 	./include/snd/audio/ringmod/ring_modulator.h
 	./include/snd/audio/ringmod/ring_modulator_mono.h
 	./include/snd/audio/ringmod/ring_modulator_stereo.h
@@ -29,6 +35,9 @@ list(APPEND SRC
 	./src/audio/filter/2-pole.cpp
 	./src/audio/filter/2-pole_mono.cpp
 	./src/audio/filter/2-pole_stereo.cpp
+	./src/audio/filter/2-pole_allpass.cpp
+	./src/audio/filter/2-pole_allpass_mono.cpp
+	./src/audio/filter/2-pole_allpass_stereo.cpp
 	./src/audio/ringmod/ring_modulator.cpp
 	./src/audio/ringmod/ring_modulator_mono.cpp
 	./src/audio/ringmod/ring_modulator_stereo.cpp

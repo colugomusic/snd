@@ -10,26 +10,30 @@ public:
 
 	struct BQAP
 	{
-		float a0, a1, a2, b0, b1, b2;
+		double a0 = 0.0f;
+		double a1 = 0.0f;
+		double a2 = 0.0f;
+		double b0 = 0.0f;
+		double b1 = 0.0f;
+		double b2 = 0.0f;
 	};
 
 private:
 
 	BQAP bqap_;
-	float ap_;
-	float zdfbk_val_0_;
-	float zdfbk_val_1_;
-	float zdfbk_val_2_;
-	float zdfbk_val_3_;
+
+	double zdfbk_val_0_ = 0.0f;
+	double zdfbk_val_1_ = 0.0f;
+	double zdfbk_val_2_ = 0.0f;
+	double zdfbk_val_3_ = 0.0f;
 
 public:
 
-	float ap() const { return ap_; }
-	void process_frame(float in);
+	float operator()(float in);
 
 	void set(const BQAP& bqap);
 
-	static void calculate(float sr, float freq, float res, BQAP* bqap);
+	static void calculate(int sr, float freq, float res, BQAP* bqap);
 };
 
 }}}
