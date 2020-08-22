@@ -34,6 +34,9 @@ public:
 	void operator()(float in);
 
 	void set_sample_rate(int sr);
+
+	void copy(const Smoother& rhs);
+	void reset();
 };
 
 }}

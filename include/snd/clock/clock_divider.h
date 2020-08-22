@@ -18,6 +18,8 @@ public:
 	void operator()();
 
 	void set_divisor(int divisor);
+
+	ClockDivider& copy(const ClockDivider& rhs);
 };
 
 }}

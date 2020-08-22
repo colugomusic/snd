@@ -66,4 +66,29 @@ void Smoother::set_sample_rate(int sr)
 	clock_divider_.set_divisor(clock_divisor_);
 }
 
+void Smoother::copy(const Smoother& rhs)
+{
+	sample_rate_ = rhs.sample_rate_;
+	time_ = rhs.time_;
+	update_rate_ = rhs.update_rate_;
+	clock_divisor_ = rhs.clock_divisor_;
+	clock_rate_ = rhs.clock_rate_;
+	ramp_inc_ = rhs.ramp_inc_;
+	prev_val_ = rhs.prev_val_;
+	ramp_ = rhs.ramp_;
+	in_ = rhs.in_;
+
+	clock_divider_.copy(rhs.clock_divider_);
+	dup_filter_.copy(rhs.dup_filter_);
+}
+
+void Smoother::reset()
+{
+	prev_val_ = 0.0;
+	ramp_ = 0.0f;
+	in_ = 0.0f;
+
+	dup_filter_.reset();
+}
+
 }}

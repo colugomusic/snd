@@ -15,6 +15,8 @@ public:
 
 	DupFilter(std::function<void(T)> callback);
 	void operator()(T in);
+	void copy(const DupFilter<T>& rhs);
+	void reset();
 };
 
 template <class T>
@@ -39,6 +41,20 @@ void DupFilter<T>::operator()(T in)
 		callback_(in);
 		prev_ = in;
 	}
+}
+
+template <class T>
+void DupFilter<T>::copy(const DupFilter<T>& rhs)
+{
+	flag_ = rhs.flag_;
+	prev_ = rhs.prev_;
+}
+
+template <class T>
+void DupFilter<T>::reset()
+{
+	flag_ = false;
+	prev_ = T();
 }
 
 }
