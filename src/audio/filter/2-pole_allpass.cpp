@@ -22,13 +22,18 @@ static double omega(double sr, double freq)
 	return freq * (6.28319 / sr);
 }
 
+Filter_2Pole_Allpass::Filter_2Pole_Allpass(const BQAP* data)
+	: data_(data ? data : &bqap_)
+{
+}
+
 float Filter_2Pole_Allpass::operator()(float in)
 {
-	const auto a = double(in) * (bqap_.b0 * bqap_.a0);
-	const auto b = zdfbk_val_0_ * (bqap_.b1 * bqap_.a0);
-	const auto c = zdfbk_val_1_ * (bqap_.b2 * bqap_.a0);
-	const auto d = zdfbk_val_2_ * -(bqap_.a1 * bqap_.a0);
-	const auto e = zdfbk_val_3_ * -(bqap_.a2 * bqap_.a0);
+	const auto a = double(in) * (data_->a2 * data_->a0);
+	const auto b = zdfbk_val_0_ * (data_->a1 * data_->a0);
+	const auto c = zdfbk_val_1_ * (data_->b2 * data_->a0);
+	const auto d = zdfbk_val_2_ * -(data_->a1 * data_->a0);
+	const auto e = zdfbk_val_3_ * -(data_->a2 * data_->a0);
 
 	const auto ap = a + b + c + d + e;
 
@@ -45,6 +50,11 @@ void Filter_2Pole_Allpass::set(const BQAP& bqap)
 	bqap_ = bqap;
 }
 
+void Filter_2Pole_Allpass::set_external_data(const BQAP* data)
+{
+	data_ = data;
+}
+
 void Filter_2Pole_Allpass::calculate(int sr, float freq, float res, BQAP* bqap)
 {
 	const auto o = omega(double(sr), clip_freq(double(sr), double(freq)));
@@ -53,15 +63,11 @@ void Filter_2Pole_Allpass::calculate(int sr, float freq, float res, BQAP* bqap)
 
 	const auto alfa = sn * (1.0 - res);
 
-	bqap->a0 = 1.0 + alfa;
+	bqap->b2 = 1.0 + alfa;
 	bqap->a1 = cs * -2.0;
 	bqap->a2 = 1.0 - alfa;
 
-	bqap->b2 = bqap->a0;
-	bqap->b1 = bqap->a1;
-	bqap->b0 = bqap->a2;
-
-	bqap->a0 = 1.0 / bqap->a0;
+	bqap->a0 = 1.0 / bqap->b2;
 }
 
 }}}

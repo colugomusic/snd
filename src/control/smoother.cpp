@@ -84,10 +84,9 @@ void Smoother::copy(const Smoother& rhs)
 
 void Smoother::reset()
 {
-	prev_val_ = 0.0;
-	ramp_ = 0.0f;
-	in_ = 0.0f;
+	prev_val_ = in_;
 
+	clock_divider_.reset();
 	dup_filter_.reset();
 }
 

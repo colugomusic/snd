@@ -13,11 +13,30 @@ class Filter_2Pole_AllpassArray
 
 public:
 
+	Filter_2Pole_AllpassArray(const Filter_2Pole_Allpass::BQAP* data = nullptr);
 	float operator()(float in);
 
 	void set(const Filter_2Pole_Allpass::BQAP& bqap);
+	void set_external_data(const Filter_2Pole_Allpass::BQAP* data);
 };
 
+template <int Size>
+Filter_2Pole_AllpassArray<Size>::Filter_2Pole_AllpassArray(const Filter_2Pole_Allpass::BQAP* data)
+{
+	if (data)
+	{
+		set_external_data(data);
+	}
+}
+
+template <int Size>
+void Filter_2Pole_AllpassArray<Size>::set_external_data(const Filter_2Pole_Allpass::BQAP* data)
+{
+	for (auto& filter : filters_)
+	{
+		filter.set_external_data(data);
+	}
+}
 
 template <int Size>
 float Filter_2Pole_AllpassArray<Size>::operator()(float in)

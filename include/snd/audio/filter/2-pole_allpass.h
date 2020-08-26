@@ -13,14 +13,13 @@ public:
 		double a0 = 0.0f;
 		double a1 = 0.0f;
 		double a2 = 0.0f;
-		double b0 = 0.0f;
-		double b1 = 0.0f;
 		double b2 = 0.0f;
 	};
 
 private:
 
 	BQAP bqap_;
+	const BQAP* data_;
 
 	double zdfbk_val_0_ = 0.0f;
 	double zdfbk_val_1_ = 0.0f;
@@ -29,9 +28,12 @@ private:
 
 public:
 
+	Filter_2Pole_Allpass(const BQAP* data = nullptr);
+
 	float operator()(float in);
 
 	void set(const BQAP& bqap);
+	void set_external_data(const BQAP* data);
 
 	static void calculate(int sr, float freq, float res, BQAP* bqap);
 };

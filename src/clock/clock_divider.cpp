@@ -27,6 +27,11 @@ void ClockDivider::set_divisor(int divisor)
 	counter_ = divisor;
 }
 
+void ClockDivider::reset()
+{
+	counter_ = divisor_;
+}
+
 ClockDivider& ClockDivider::copy(const ClockDivider& rhs)
 {
 	counter_ = rhs.counter_;

@@ -14,9 +14,14 @@ class Filter_2Pole_AllpassArray_Stereo
 	float freq_R_ = 400.0f;
 	float res_ = 0.0f;
 
+	Filter_2Pole_Allpass::BQAP data_L_;
+	Filter_2Pole_Allpass::BQAP data_R_;
 	Filter_2Pole_AllpassArray<Size> filters_[2];
 
 public:
+
+	Filter_2Pole_AllpassArray_Stereo();
+	Filter_2Pole_AllpassArray_Stereo& operator=(const Filter_2Pole_AllpassArray_Stereo& rhs);
 
 	float process_L(float in);
 	float process_R(float in);
@@ -26,7 +31,36 @@ public:
 	void set_res(float res, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);
 	void recalculate();
+	void reset();
 };
+
+template <int Size>
+Filter_2Pole_AllpassArray_Stereo<Size>::Filter_2Pole_AllpassArray_Stereo()
+{
+	filters_[0].set_external_data(&data_L_);
+	filters_[1].set_external_data(&data_R_);
+}
+
+template <int Size>
+Filter_2Pole_AllpassArray_Stereo<Size>& Filter_2Pole_AllpassArray_Stereo<Size>::operator=(const Filter_2Pole_AllpassArray_Stereo& rhs)
+{
+	sr_ = rhs.sr_;
+	freq_L_ = rhs.freq_L_;
+	freq_R_ = rhs.freq_R_;
+	res_ = rhs.res_;
+
+	data_L_ = rhs.data_L_;
+	data_R_ = rhs.data_R_;
+
+	return *this;
+}
+
+template <int Size>
+void Filter_2Pole_AllpassArray_Stereo<Size>::reset()
+{
+	data_L_ = Filter_2Pole_Allpass::BQAP();
+	data_R_ = Filter_2Pole_Allpass::BQAP();
+}
 
 template <int Size>
 float Filter_2Pole_AllpassArray_Stereo<Size>::process_L(float in)
@@ -54,11 +88,7 @@ void Filter_2Pole_AllpassArray_Stereo<Size>::set_freq_L(float freq)
 {
 	freq_L_ = freq;
 
-	Filter_2Pole_Allpass::BQAP bqap;
-
-	Filter_2Pole_Allpass::calculate(sr_, freq_L_, res_, &bqap);
-
-	filters_[0].set(bqap);
+	Filter_2Pole_Allpass::calculate(sr_, freq_L_, res_, &data_L_);
 }
 
 template <int Size>
@@ -66,11 +96,7 @@ void Filter_2Pole_AllpassArray_Stereo<Size>::set_freq_R(float freq)
 {
 	freq_R_ = freq;
 
-	Filter_2Pole_Allpass::BQAP bqap;
-
-	Filter_2Pole_Allpass::calculate(sr_, freq_R_, res_, &bqap);
-
-	filters_[1].set(bqap);
+	Filter_2Pole_Allpass::calculate(sr_, freq_R_, res_, &data_R_);
 }
 
 template <int Size>
@@ -92,18 +118,16 @@ void Filter_2Pole_AllpassArray_Stereo<Size>::set_sr(int sr, bool recalc)
 template <int Size>
 void Filter_2Pole_AllpassArray_Stereo<Size>::recalculate()
 {
-	Filter_2Pole_Allpass::BQAP bqap;
-
-	Filter_2Pole_Allpass::calculate(sr_, freq_L_, res_, &bqap);
-
-	filters_[0].set(bqap);
+	Filter_2Pole_Allpass::calculate(sr_, freq_L_, res_, &data_L_);
 
 	if (std::abs(freq_L_ - freq_R_) > 0.0001f)
 	{
-		Filter_2Pole_Allpass::calculate(sr_, freq_R_, res_, &bqap);
+		Filter_2Pole_Allpass::calculate(sr_, freq_R_, res_, &data_R_);
 	}
-
-	filters_[1].set(bqap);
+	else
+	{
+		data_R_ = data_L_;
+	}
 }
 
 }}}
