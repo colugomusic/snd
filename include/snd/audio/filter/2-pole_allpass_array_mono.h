@@ -44,6 +44,8 @@ Filter_2Pole_AllpassArray_Mono<Size>& Filter_2Pole_AllpassArray_Mono<Size>::oper
 
 	data_ = rhs.data_;
 
+	filter_.copy(rhs.filter_);
+
 	return *this;
 }
 

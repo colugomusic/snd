@@ -52,6 +52,9 @@ Filter_2Pole_AllpassArray_Stereo<Size>& Filter_2Pole_AllpassArray_Stereo<Size>::
 	data_L_ = rhs.data_L_;
 	data_R_ = rhs.data_R_;
 
+	filters_[0].copy(rhs.filters_[0]);
+	filters_[1].copy(rhs.filters_[1]);
+
 	return *this;
 }
 

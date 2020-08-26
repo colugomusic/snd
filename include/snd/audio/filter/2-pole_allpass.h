@@ -32,6 +32,8 @@ public:
 
 	float operator()(float in);
 
+	void copy(const Filter_2Pole_Allpass& rhs);
+
 	void set(const BQAP& bqap);
 	void set_external_data(const BQAP* data);
 

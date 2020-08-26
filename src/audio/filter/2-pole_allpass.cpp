@@ -45,6 +45,19 @@ float Filter_2Pole_Allpass::operator()(float in)
 	return float(ap);
 }
 
+void Filter_2Pole_Allpass::copy(const Filter_2Pole_Allpass& rhs)
+{
+	if (data_ == &bqap_)
+	{
+		bqap_ = rhs.bqap_;
+	}
+
+	zdfbk_val_0_ = rhs.zdfbk_val_0_;
+	zdfbk_val_1_ = rhs.zdfbk_val_1_;
+	zdfbk_val_2_ = rhs.zdfbk_val_2_;
+	zdfbk_val_3_ = rhs.zdfbk_val_3_;
+}
+
 void Filter_2Pole_Allpass::set(const BQAP& bqap)
 {
 	bqap_ = bqap;
