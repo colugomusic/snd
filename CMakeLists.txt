@@ -4,6 +4,7 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
 	./include/snd/dup_filter.h
 	./include/snd/ease.h
+	./include/snd/interpolation.h
 	./include/snd/misc.h
 	./include/snd/audio/clipping.h
 	./include/snd/audio/filter/1-pole.h
