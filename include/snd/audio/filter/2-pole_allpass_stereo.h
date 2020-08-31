@@ -17,8 +17,7 @@ class Filter_2Pole_Allpass_Stereo
 
 public:
 
-	float process_L(float in);
-	float process_R(float in);
+	ml::DSPVectorArray<2> operator()(ml::DSPVectorArray<2> in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_freq_L(float freq);
 	void set_freq_R(float freq);

@@ -4,14 +4,9 @@ namespace snd {
 namespace audio {
 namespace saturator {
 
-float MoronSaturator_Stereo::process_left(float in)
+ml::DSPVectorArray<2> MoronSaturator_Stereo::operator()(const ml::DSPVectorArray<2>& in)
 {
-	return saturators_[0](in);
-}
-
-float MoronSaturator_Stereo::process_right(float in)
-{
-	return saturators_[1](in);
+	return ml::append(saturators_[0](in.constRow(0)), saturators_[1](in.constRow(1)));
 }
 
 void MoronSaturator_Stereo::set_drive(float drive, bool recalc)

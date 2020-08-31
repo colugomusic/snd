@@ -23,8 +23,9 @@ public:
 	Filter_2Pole_AllpassArray_Stereo();
 	Filter_2Pole_AllpassArray_Stereo& operator=(const Filter_2Pole_AllpassArray_Stereo& rhs);
 
-	float process_L(float in);
-	float process_R(float in);
+	//float process_L(float in);
+	//float process_R(float in);
+	ml::DSPVectorArray<2> operator()(const ml::DSPVectorArray<2>& in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_freq_L(float freq);
 	void set_freq_R(float freq);
@@ -65,16 +66,27 @@ void Filter_2Pole_AllpassArray_Stereo<Size>::reset()
 	data_R_ = Filter_2Pole_Allpass::BQAP();
 }
 
-template <int Size>
-float Filter_2Pole_AllpassArray_Stereo<Size>::process_L(float in)
-{
-	return filters_[0](in);
-}
+//template <int Size>
+//float Filter_2Pole_AllpassArray_Stereo<Size>::process_L(float in)
+//{
+//	return filters_[0](in);
+//}
+//
+//template <int Size>
+//float Filter_2Pole_AllpassArray_Stereo<Size>::process_R(float in)
+//{
+//	return filters_[1](in);
+//}
 
 template <int Size>
-float Filter_2Pole_AllpassArray_Stereo<Size>::process_R(float in)
+ml::DSPVectorArray<2> Filter_2Pole_AllpassArray_Stereo<Size>::operator()(const ml::DSPVectorArray<2>& in)
 {
-	return filters_[1](in);
+	ml::DSPVectorArray<2> out;
+
+	out.row(0) = filters_[0](in.constRow(0));
+	out.row(1) = filters_[1](in.constRow(1));
+
+	return out;
 }
 
 template <int Size>

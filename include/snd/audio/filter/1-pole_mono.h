@@ -17,9 +17,11 @@ public:
 
 	Filter_1Pole_Mono();
 
-	float lp() const { return filter_.lp(); }
-	float hp() const { return filter_.hp(); }
-	void process_frame(float in);
+	ml::DSPVector lp() const { return filter_.lp(); }
+	ml::DSPVector hp() const { return filter_.hp(); }
+
+	void operator()(const ml::DSPVector& in);
+
 	void set_freq(float freq, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);
 	void recalculate();

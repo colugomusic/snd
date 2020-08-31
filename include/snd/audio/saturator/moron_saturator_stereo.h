@@ -14,8 +14,8 @@ class MoronSaturator_Stereo
 
 public:
 
-	float process_left(float in);
-	float process_right(float in);
+	ml::DSPVectorArray<2> operator()(const ml::DSPVectorArray<2>& in);
+
 	void set_drive(float drive, bool recalculate = true);
 	void recalculate();
 };

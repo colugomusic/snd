@@ -14,7 +14,8 @@ class Filter_2Pole_AllpassArray
 public:
 
 	Filter_2Pole_AllpassArray(const Filter_2Pole_Allpass::BQAP* data = nullptr);
-	float operator()(float in);
+	//float operator()(float in);
+	ml::DSPVector operator()(const ml::DSPVector& in);
 
 	void copy(const Filter_2Pole_AllpassArray<Size>& rhs);
 
@@ -49,15 +50,28 @@ void Filter_2Pole_AllpassArray<Size>::set_external_data(const Filter_2Pole_Allpa
 	}
 }
 
+//template <int Size>
+//float Filter_2Pole_AllpassArray<Size>::operator()(float in)
+//{
+//	for (auto& filter : filters_)
+//	{
+//		in = filter(in);
+//	}
+//
+//	return in;
+//}
+
 template <int Size>
-float Filter_2Pole_AllpassArray<Size>::operator()(float in)
-{
+ml::DSPVector Filter_2Pole_AllpassArray<Size>::operator()(const ml::DSPVector& in)
+{	
+	ml::DSPVector out = in;
+
 	for (auto& filter : filters_)
 	{
-		in = filter(in);
+		out = filter(out);
 	}
 
-	return in;
+	return out;
 }
 
 template <int Size>

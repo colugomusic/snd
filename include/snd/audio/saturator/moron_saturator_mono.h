@@ -14,7 +14,7 @@ class MoronSaturator_Mono
 
 public:
 
-	float operator()(float in);
+	ml::DSPVector operator()(const ml::DSPVector& in);
 	void set_drive(float drive, bool recalculate = true);
 	void recalculate();
 };

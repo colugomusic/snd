@@ -5,7 +5,7 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-float Filter_2Pole_Allpass_Mono::operator()(float in)
+ml::DSPVector Filter_2Pole_Allpass_Mono::operator()(const ml::DSPVector in)
 {
 	return filter_(in);
 }

@@ -4,14 +4,9 @@ namespace snd {
 namespace audio {
 namespace ringmod {
 
-float RingModulator_Stereo::process_left(float in)
+ml::DSPVectorArray<2> RingModulator_Stereo::operator()(const ml::DSPVectorArray<2>& in)
 {
-	return ringmod_[0](in);
-}
-
-float RingModulator_Stereo::process_right(float in)
-{
-	return ringmod_[1](in);
+	return ml::append(ringmod_[0](in.constRow(0)), ringmod_[1](in.constRow(1)));
 }
 
 void RingModulator_Stereo::reset(float phase)

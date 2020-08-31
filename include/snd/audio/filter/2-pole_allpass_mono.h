@@ -16,7 +16,7 @@ class Filter_2Pole_Allpass_Mono
 
 public:
 
-	float operator()(float in);
+	ml::DSPVector operator()(const ml::DSPVector in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_res(float res, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);

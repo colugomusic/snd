@@ -4,7 +4,7 @@ namespace snd {
 namespace audio {
 namespace saturator {
 
-float MoronSaturator_Mono::operator()(float in)
+ml::DSPVector MoronSaturator_Mono::operator()(const ml::DSPVector& in)
 {
 	return saturator_(in);
 }

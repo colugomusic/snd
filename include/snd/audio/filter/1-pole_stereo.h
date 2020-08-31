@@ -17,13 +17,11 @@ public:
 
 	Filter_1Pole_Stereo();
 
-	float lp_L() const { return filters_[0].lp(); }
-	float lp_R() const { return filters_[1].lp(); }
-	float hp_L() const { return filters_[0].hp(); }
-	float hp_R() const { return filters_[1].hp(); }
+	ml::DSPVectorArray<2> lp() const;
+	ml::DSPVectorArray<2> hp() const;
 
-	void process_left(float in);
-	void process_right(float in);
+	void operator()(const ml::DSPVectorArray<2>& in);
+
 	void set_freq(float freq, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);
 	void recalculate();

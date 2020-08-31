@@ -12,14 +12,25 @@ Filter_2Pole_Stereo::Filter_2Pole_Stereo()
 {
 }
 
-void Filter_2Pole_Stereo::process_left(float in)
+ml::DSPVectorArray<2> Filter_2Pole_Stereo::lp() const
 {
-	filters_[0].process_frame(in);
+	return ml::append(filters_[0].lp(), filters_[1].lp());
 }
 
-void Filter_2Pole_Stereo::process_right(float in)
+ml::DSPVectorArray<2> Filter_2Pole_Stereo::bp() const
 {
-	filters_[1].process_frame(in);
+	return ml::append(filters_[0].bp(), filters_[1].bp());
+}
+
+ml::DSPVectorArray<2> Filter_2Pole_Stereo::hp() const
+{
+	return ml::append(filters_[0].hp(), filters_[1].hp());
+}
+
+void Filter_2Pole_Stereo::operator()(const ml::DSPVectorArray<2>& in)
+{
+	filters_[0](in.constRow(0));
+	filters_[1](in.constRow(1));
 }
 
 void Filter_2Pole_Stereo::set_freq(float freq, bool recalc)
@@ -49,7 +60,7 @@ void Filter_2Pole_Stereo::recalculate()
 	float d;
 	float e;
 
-	Filter_2Pole::calculate(sr_, freq_, res_, &w_div_2, &d, &e);
+	Filter_2Pole<ml::DSPVector>::calculate(sr_, freq_, res_, &w_div_2, &d, &e);
 
 	filters_[0].set(w_div_2, d, e);
 	filters_[1].set(w_div_2, d, e);

@@ -7,10 +7,11 @@ namespace snd {
 namespace audio {
 namespace saturator {
 
-float MoronSaturator::operator()(float in) const
+ml::DSPVector MoronSaturator::operator()(const ml::DSPVector& in) const
 {
 	auto s_ = (in * limit_) / c_;
-	return ((s_ / (std::sqrt(1.0f + (s_ * s_)))) / limit_) * drv_plus_1_;
+	
+	return ((s_ / (ml::sqrt(1.0f + (s_ * s_)))) / limit_) * drv_plus_1_;
 }
 
 void MoronSaturator::set(float c, float limit, float drv_plus_1)

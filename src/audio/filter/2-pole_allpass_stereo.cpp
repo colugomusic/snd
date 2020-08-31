@@ -5,14 +5,14 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-float Filter_2Pole_Allpass_Stereo::process_L(float in)
+ml::DSPVectorArray<2> Filter_2Pole_Allpass_Stereo::operator()(ml::DSPVectorArray<2> in)
 {
-	return filters_[0](in);
-}
+	ml::DSPVectorArray<2> out;
 
-float Filter_2Pole_Allpass_Stereo::process_R(float in)
-{
-	return filters_[1](in);
+	out.row(0) = filters_[0](in.row(0));
+	out.row(1) = filters_[1](in.row(1));
+
+	return out;
 }
 
 void Filter_2Pole_Allpass_Stereo::set_freq(float freq, bool recalc)

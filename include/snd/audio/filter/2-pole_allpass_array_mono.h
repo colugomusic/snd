@@ -21,7 +21,8 @@ public:
 	Filter_2Pole_AllpassArray_Mono();
 	Filter_2Pole_AllpassArray_Mono& operator=(const Filter_2Pole_AllpassArray_Mono& rhs);
 
-	float operator()(float in);
+	//float operator()(float in);
+	ml::DSPVector operator()(const ml::DSPVector& in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_res(float res, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);
@@ -55,8 +56,14 @@ void Filter_2Pole_AllpassArray_Mono<Size>::reset()
 	data_ = Filter_2Pole_Allpass::BQAP();
 }
 
+//template <int Size>
+//float Filter_2Pole_AllpassArray_Mono<Size>::operator()(float in)
+//{
+//	return filter_(in);
+//}
+
 template <int Size>
-float Filter_2Pole_AllpassArray_Mono<Size>::operator()(float in)
+ml::DSPVector Filter_2Pole_AllpassArray_Mono<Size>::operator()(const ml::DSPVector& in)
 {
 	return filter_(in);
 }

@@ -16,8 +16,7 @@ class RingModulator_Stereo
 
 public:
 
-	float process_left(float in);
-	float process_right(float in);
+	ml::DSPVectorArray<2> operator()(const ml::DSPVectorArray<2>& in);
 	void reset(float phase);
 	void set_sr(int sr, bool recalculate = true);
 	void set_freq(float freq, bool recalculate = true);

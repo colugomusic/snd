@@ -5,15 +5,18 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-void Filter_1Pole::process_frame(float in)
+void Filter_1Pole::operator()(const ml::DSPVector& in)
 {
-	auto a = in - zdfbk_val_;
-	auto b = a * g_;
-	
-	lp_ = b + zdfbk_val_;
-	hp_ = in - lp_;
+	for (int i = 0; i < kFloatsPerDSPVector; i++)
+	{
+		auto a = in[i] - zdfbk_val_;
+		auto b = a * g_;
 
-	zdfbk_val_ = b + lp_;
+		lp_[i] = b + zdfbk_val_;
+		hp_[i] = in[i] - lp_[i];
+
+		zdfbk_val_ = b + lp_[i];
+	}
 }
 
 void Filter_1Pole::set_g(float g)

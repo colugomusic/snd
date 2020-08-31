@@ -11,9 +11,9 @@ Filter_1Pole_Mono::Filter_1Pole_Mono()
 {
 }
 
-void Filter_1Pole_Mono::process_frame(float in)
+void Filter_1Pole_Mono::operator()(const ml::DSPVector& in)
 {
-	filter_.process_frame(in);
+	filter_(in);
 }
 
 void Filter_1Pole_Mono::set_freq(float freq, bool recalc)

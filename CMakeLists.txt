@@ -1,11 +1,14 @@
 project(snd)
 
+set(dir_madronalib ${CMAKE_CURRENT_LIST_DIR}/submodules/madronalib)
+
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
 	./include/snd/dup_filter.h
 	./include/snd/ease.h
 	./include/snd/interpolation.h
 	./include/snd/misc.h
+	./include/snd/mlext.h
 	./include/snd/audio/clipping.h
 	./include/snd/audio/filter/1-pole.h
 	./include/snd/audio/filter/1-pole_mono.h
@@ -56,4 +59,8 @@ add_library(${PROJECT_NAME} STATIC ${PUBLIC_HEADERS} ${SRC})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
 	./include/snd
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+	${dir_madronalib}/source
 )

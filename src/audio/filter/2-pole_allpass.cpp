@@ -6,10 +6,10 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-static double clip_freq(double sr, double freq)
+static float clip_freq(float sr, float freq)
 {
-	const auto min = sr / 24576.0;
-	const auto max = sr / 2.125;
+	const auto min = sr / 24576.0f;
+	const auto max = sr / 2.125f;
 
 	if (freq < min) return min;
 	if (freq > max) return max;
@@ -17,9 +17,9 @@ static double clip_freq(double sr, double freq)
 	return freq;
 }
 
-static double omega(double sr, double freq)
+static float omega(float sr, float freq)
 {
-	return freq * (6.28319 / sr);
+	return freq * (6.28319f / sr);
 }
 
 Filter_2Pole_Allpass::Filter_2Pole_Allpass(const BQAP* data)
@@ -27,22 +27,29 @@ Filter_2Pole_Allpass::Filter_2Pole_Allpass(const BQAP* data)
 {
 }
 
-float Filter_2Pole_Allpass::operator()(float in)
+ml::DSPVector Filter_2Pole_Allpass::operator()(const ml::DSPVector& in)
 {
-	const auto a = double(in) * (data_->a2 * data_->a0);
-	const auto b = zdfbk_val_0_ * (data_->a1 * data_->a0);
-	const auto c = zdfbk_val_1_ * (data_->b2 * data_->a0);
-	const auto d = zdfbk_val_2_ * -(data_->a1 * data_->a0);
-	const auto e = zdfbk_val_3_ * -(data_->a2 * data_->a0);
+	ml::DSPVector out;
 
-	const auto ap = a + b + c + d + e;
+	for (int i = 0; i < kFloatsPerDSPVector; i++)
+	{
+		const auto a = in[i] * (data_->a2 * data_->a0);
+		const auto b = fbk_val_0_ * (data_->a1 * data_->a0);
+		const auto c = fbk_val_1_ * (data_->b2 * data_->a0);
+		const auto d = fbk_val_2_ * -(data_->a1 * data_->a0);
+		const auto e = fbk_val_3_ * -(data_->a2 * data_->a0);
 
-	zdfbk_val_3_ = zdfbk_val_2_;
-	zdfbk_val_2_ = ap;
-	zdfbk_val_1_ = zdfbk_val_0_;
-	zdfbk_val_0_ = double(in);
+		const auto ap = a + b + c + d + e;
 
-	return float(ap);
+		fbk_val_3_ = fbk_val_2_;
+		fbk_val_2_ = ap;
+		fbk_val_1_ = fbk_val_0_;
+		fbk_val_0_ = in[i];
+
+		out[i] = ap;
+	}
+
+	return out;
 }
 
 void Filter_2Pole_Allpass::copy(const Filter_2Pole_Allpass& rhs)
@@ -52,10 +59,10 @@ void Filter_2Pole_Allpass::copy(const Filter_2Pole_Allpass& rhs)
 		bqap_ = rhs.bqap_;
 	}
 
-	zdfbk_val_0_ = rhs.zdfbk_val_0_;
-	zdfbk_val_1_ = rhs.zdfbk_val_1_;
-	zdfbk_val_2_ = rhs.zdfbk_val_2_;
-	zdfbk_val_3_ = rhs.zdfbk_val_3_;
+	fbk_val_0_ = rhs.fbk_val_0_;
+	fbk_val_1_ = rhs.fbk_val_1_;
+	fbk_val_2_ = rhs.fbk_val_2_;
+	fbk_val_3_ = rhs.fbk_val_3_;
 }
 
 void Filter_2Pole_Allpass::set(const BQAP& bqap)
@@ -70,17 +77,17 @@ void Filter_2Pole_Allpass::set_external_data(const BQAP* data)
 
 void Filter_2Pole_Allpass::calculate(int sr, float freq, float res, BQAP* bqap)
 {
-	const auto o = omega(double(sr), clip_freq(double(sr), double(freq)));
+	const auto o = omega(float(sr), clip_freq(float(sr), freq));
 	const auto sn = std::sin(o);
 	const auto cs = std::cos(o);
 
-	const auto alfa = sn * (1.0 - res);
+	const auto alfa = sn * (1.0f - res);
 
-	bqap->b2 = 1.0 + alfa;
-	bqap->a1 = cs * -2.0;
-	bqap->a2 = 1.0 - alfa;
+	bqap->b2 = 1.0f + alfa;
+	bqap->a1 = cs * -2.0f;
+	bqap->a2 = 1.0f - alfa;
 
-	bqap->a0 = 1.0 / bqap->b2;
+	bqap->a0 = 1.0f / bqap->b2;
 }
 
 }}}

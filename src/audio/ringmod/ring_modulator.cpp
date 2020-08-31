@@ -6,18 +6,16 @@ namespace snd {
 namespace audio {
 namespace ringmod {
 
-float RingModulator::operator()(float dry)
+ml::DSPVector RingModulator::operator()(const ml::DSPVector& dry)
 {
-	auto wet = ((std::sin(phase_) + 1.0) * 0.5) * dry;
+	auto wet = ((ml::sin(phase_()) + 1.0f) * 0.5f) * dry;
 
-	phase_ += inc_;
-
-	return lerp(dry, float(wet), amount_);
+	return ml::lerp(dry, wet, ml::DSPVector(amount_));
 }
 
-void RingModulator::reset(double phase)
+void RingModulator::reset(float phase)
 {
-	phase_ = phase;
+	phase_.reset(phase);
 }
 
 void RingModulator::set_amount(float amount)
@@ -27,7 +25,7 @@ void RingModulator::set_amount(float amount)
 
 void RingModulator::set_inc(double inc)
 {
-	inc_ = inc;
+	phase_.set_inc(inc);
 }
 
 double RingModulator::calculate_inc(int sr, float freq)

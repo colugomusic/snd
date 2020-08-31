@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <cmath>
 
+#pragma warning(push, 0)
+#include <DSP/MLDSPOps.h>
+#pragma warning(pop)
+
 namespace snd {
 namespace audio {
 namespace saturator {
@@ -15,7 +19,7 @@ class MoronSaturator
 
 public:
 	
-	float operator()(float in) const;
+	ml::DSPVector operator()(const ml::DSPVector& in) const;
 
 	void set(float c, float limit, float drv_plus_1);
 

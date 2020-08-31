@@ -12,23 +12,18 @@ class Filter_2Pole_Stereo
 	float freq_;
 	float res_;
 
-	Filter_2Pole filters_[2];
+	Filter_2Pole<ml::DSPVector> filters_[2];
 
 public:
 
 	Filter_2Pole_Stereo();
 
-	float lp_L() const { return filters_[0].lp(); }
-	float lp_R() const { return filters_[1].lp(); }
+	ml::DSPVectorArray<2> lp() const;
+	ml::DSPVectorArray<2> bp() const;
+	ml::DSPVectorArray<2> hp() const;
 
-	float bp_L() const { return filters_[0].bp(); }
-	float bp_R() const { return filters_[1].bp(); }
+	void operator()(const ml::DSPVectorArray<2>& in);
 
-	float hp_L() const { return filters_[0].hp(); }
-	float hp_R() const { return filters_[1].hp(); }
-
-	void process_left(float in);
-	void process_right(float in);
 	void set_freq(float freq, bool recalculate = true);
 	void set_res(float res, bool recalculate = true);
 	void set_sr(int sr, bool recalculate = true);

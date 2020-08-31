@@ -4,7 +4,7 @@ namespace snd {
 namespace audio {
 namespace ringmod {
 
-float RingModulator_Mono::operator()(float in)
+ml::DSPVector RingModulator_Mono::operator()(const ml::DSPVector& in)
 {
 	return ringmod_(in);
 }

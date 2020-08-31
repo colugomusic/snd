@@ -16,7 +16,7 @@ class RingModulator_Mono
 
 public:
 
-	float operator()(float in);
+	ml::DSPVector operator()(const ml::DSPVector& in);
 	void reset(float phase);
 	void set_sr(int sr, bool recalculate = true);
 	void set_freq(float freq, bool recalculate = true);
