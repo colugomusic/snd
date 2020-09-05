@@ -29,6 +29,7 @@ public:
 	const T& lp() const { return lp_; }
 	const T& bp() const { return bp_; }
 	const T& hp() const { return hp_; }
+	T peak() const { return lp_ - hp_; }
 
 	void operator()(const T& in) {}
 

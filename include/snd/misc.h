@@ -6,6 +6,15 @@ namespace snd {
 
 constexpr auto PI = 3.14159265358979f;
 
+
+constexpr float DENORMAL_DC = 1e-25f;
+
+inline void flush_denormal_to_zero(float& x)
+{
+	x += DENORMAL_DC;
+	x -= DENORMAL_DC;
+}
+
 template <class T>
 T tan_rational(T in)
 {

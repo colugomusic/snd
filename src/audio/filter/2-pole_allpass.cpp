@@ -1,6 +1,7 @@
 #include "audio/filter/2-pole_allpass.h"
 #include <algorithm>
 #include <cmath>
+#include <misc.h>
 
 namespace snd {
 namespace audio {
@@ -33,13 +34,15 @@ ml::DSPVector Filter_2Pole_Allpass::operator()(const ml::DSPVector& in)
 
 	for (int i = 0; i < kFloatsPerDSPVector; i++)
 	{
-		const auto a = in[i] * (data_->a2 * data_->a0);
-		const auto b = fbk_val_0_ * (data_->a1 * data_->a0);
-		const auto c = fbk_val_1_ * (data_->b2 * data_->a0);
-		const auto d = fbk_val_2_ * -(data_->a1 * data_->a0);
-		const auto e = fbk_val_3_ * -(data_->a2 * data_->a0);
+		const auto a = in[i] * data_->c0;
+		const auto b = fbk_val_0_ * data_->c1;
+		const auto c = fbk_val_1_ * data_->c2;
+		const auto d = fbk_val_2_ * -data_->c1;
+		const auto e = fbk_val_3_ * -data_->c0;
 
-		const auto ap = a + b + c + d + e;
+		auto ap = a + b + c + d + e;
+
+		flush_denormal_to_zero(ap);
 
 		fbk_val_3_ = fbk_val_2_;
 		fbk_val_2_ = ap;
@@ -83,11 +86,15 @@ void Filter_2Pole_Allpass::calculate(int sr, float freq, float res, BQAP* bqap)
 
 	const auto alfa = sn * (1.0f - res);
 
-	bqap->b2 = 1.0f + alfa;
-	bqap->a1 = cs * -2.0f;
-	bqap->a2 = 1.0f - alfa;
+	const auto b2 = 1.0f + alfa;
+	const auto a1 = cs * -2.0f;
+	const auto a2 = 1.0f - alfa;
 
-	bqap->a0 = 1.0f / bqap->b2;
+	const auto a0 = 1.0f / b2;
+
+	bqap->c0 = a2 * a0;
+	bqap->c1 = a1 * a0;
+	bqap->c2 = b2 * a0;
 }
 
 }}}

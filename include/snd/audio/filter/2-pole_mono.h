@@ -22,6 +22,7 @@ public:
 	T lp() const { return filter_.lp(); }
 	T bp() const { return filter_.bp(); }
 	T hp() const { return filter_.hp(); }
+	T peak() const { return filter_.peak(); }
 
 	void operator()(const T& in);
 

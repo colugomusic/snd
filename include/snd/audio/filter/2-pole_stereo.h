@@ -21,6 +21,7 @@ public:
 	ml::DSPVectorArray<2> lp() const;
 	ml::DSPVectorArray<2> bp() const;
 	ml::DSPVectorArray<2> hp() const;
+	ml::DSPVectorArray<2> peak() const;
 
 	void operator()(const ml::DSPVectorArray<2>& in);
 

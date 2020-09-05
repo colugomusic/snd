@@ -15,10 +15,9 @@ public:
 
 	struct BQAP
 	{
-		float a0 = 0.0f;
-		float a1 = 0.0f;
-		float a2 = 0.0f;
-		float b2 = 0.0f;
+		float c0 = 0.0f;
+		float c1 = 0.0f;
+		float c2 = 0.0f;
 	};
 
 private:
@@ -34,8 +33,6 @@ private:
 public:
 
 	Filter_2Pole_Allpass(const BQAP* data = nullptr);
-
-	//float operator()(float in);
 
 	ml::DSPVector operator()(const ml::DSPVector& in);
 

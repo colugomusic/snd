@@ -27,6 +27,11 @@ ml::DSPVectorArray<2> Filter_2Pole_Stereo::hp() const
 	return ml::append(filters_[0].hp(), filters_[1].hp());
 }
 
+ml::DSPVectorArray<2> Filter_2Pole_Stereo::peak() const
+{
+	return ml::append(filters_[0].peak(), filters_[1].peak());
+}
+
 void Filter_2Pole_Stereo::operator()(const ml::DSPVectorArray<2>& in)
 {
 	filters_[0](in.constRow(0));
