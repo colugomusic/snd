@@ -279,19 +279,6 @@ public:
 	{
 	}
 
-	AudioObject& operator=(AudioObject&& rhs)
-	{
-		audio_interface_ = std::move(rhs.audio_interface_);
-
-		next_.store(rhs.next_.load());
-		recent_ = rhs.recent_;
-
-		rhs.next_ = nullptr;
-		rhs.recent_ = nullptr;
-
-		return *this;
-	}
-
 	~AudioObject()
 	{
 		if (next_) manager_.dispose(next_);
