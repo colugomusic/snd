@@ -24,9 +24,6 @@
 * be used to access the most recently retrieved version of the object (which is not
 * necessarily the most recently committed).
 * 
-* audio()->get_recent() peeks the new version if there is one pending, or returns
-* the most recently retrieved version if there is no new version pending.
-* 
 * usage:
 * 
 * AudioObject<Thing> thing;
@@ -160,19 +157,6 @@ public:
 	T* get_next_unmanaged()
 	{
 		return (retrieved_ = object_->get_next());
-	}
-
-	// If there's a new version waiting, peek it without
-	// retrieving it. Otherwise return the last retrieved
-	// version
-	T* get_recent()
-	{
-		if (pending())
-		{
-			return object_->next_;
-		}
-
-		return retrieved_;
 	}
 
 	T* operator->() { return retrieved_; }
