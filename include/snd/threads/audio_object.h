@@ -26,7 +26,7 @@
 * 
 * usage:
 * 
-* AudioObject<Thing> thing;
+*	AudioObject<Thing> thing;
 * 
 * in GUI thread:
 * 
