@@ -214,7 +214,7 @@ class AudioObject
 	friend class AudioObjectAudio<T>;
 	friend class AudioObjectGUI<T>;
 
-	static AudioObjectManager<T> manager_;
+	AudioObjectManager<T> manager_;
 
 	AudioObjectAudio<T> audio_interface_;
 	AudioObjectGUI<T> gui_interface_;
@@ -280,8 +280,5 @@ public:
 		manager_.dispose(object);
 	}
 };
-
-template <class T>
-AudioObjectManager<T> AudioObject<T>::manager_;
 
 }}
