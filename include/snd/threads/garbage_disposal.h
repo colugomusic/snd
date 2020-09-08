@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <atomic>
 #include <map>
 
@@ -14,7 +13,7 @@
  * 
  * The objects must have an entry created beforehand, by calling create_entry().
  * 
- * Calling collect() deletes the objects.
+ * Calling collect() deletes disposed objects.
  * 
  * create_enty() allocates memory and collect() deallocates memory.
  * 
