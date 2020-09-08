@@ -10,7 +10,7 @@
 * Basic concept is that when the GUI thread wants to modify an object in a way
 * that needs to be synchronized, it instead creates a copy of the object and
 * performs the modifications on the copy. It then calls gui().commit() to make the
-* new version of the object visible to the audio thread.
+* new version of the object available to the audio thread.
 * 
 * The audio thread should call audio().pending() to check if there is a new version
 * of the object waiting to be picked up, and audio().get_next() to retrieve the new
