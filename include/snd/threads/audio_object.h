@@ -43,7 +43,7 @@
 *	// updating:
 *	//
 * 
-*   // Copies the most recently commit()'ed version of the object
+*	// Copies the most recently commit()'ed version of the object
 *	auto new_thing = thing.gui().make_copy(); 
 *	
 *	new_thing->a = 1;
@@ -63,8 +63,9 @@
 * 
 * in audio thread (2):
 * 
-*	// gets a new 
 *	Thing* ptr;
+*	
+*	...
 * 
 *	if (thing.audio().pending())
 *	{
@@ -115,8 +116,8 @@ public:
 /*
  * These AudioObjectAudio and AudioObjectGUI classes are simply used to create
  * a clear distinction between audio and GUI operations at the call site. There
- * is nothing stopping you from calling audio() in a GUI thread or gui() in an
- * audio thread, if you know what you're doing.
+ * is nothing stopping clients from calling audio() in a GUI thread or gui() in
+ * an audio thread
  */
 
 template <class T>
