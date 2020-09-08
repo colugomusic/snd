@@ -30,6 +30,9 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/audio/saturator/moron_saturator_stereo.h
 	./include/snd/clock/clock_divider.h
 	./include/snd/control/smoother.h
+	./include/snd/threads/audio_object.h
+	./include/snd/threads/audio_object_manager.h
+	./include/snd/threads/garbage_disposal.h
 )
 
 list(APPEND SRC
