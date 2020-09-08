@@ -16,11 +16,11 @@
 * of the object waiting to be picked up, and audio().get_next() to retrieve the new
 * version.
 * 
-* The object returned from gui() overloads the -> and * operators which can be used
+* The interface returned from gui() overloads the -> and * operators which can be used
 * to access the most recently committed version of the object. This is the version
 * which is used as a base by gui().make_copy().
 * 
-* The object returned from audio() also overloads the -> and * operators, and can
+* The interface returned from audio() also overloads the -> and * operators, and can
 * be used to access the most recently retrieved version of the object (which is not
 * necessarily the most recently committed).
 * 
