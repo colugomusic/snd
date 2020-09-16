@@ -26,13 +26,8 @@ list(APPEND PUBLIC_HEADERS
 )
 
 list(APPEND SRC
-	./src/audio/filter/1-pole.cpp
-	./src/audio/filter/2-pole.cpp
-	./src/audio/filter/2-pole_allpass.cpp
 	./src/audio/filter/serial/2-pole.cpp
 	./src/audio/filter/serial/2-pole_mono.cpp
-	./src/audio/ringmod/ring_modulator.cpp
-	./src/audio/saturator/moron_saturator.cpp
 	./src/clock/clock_divider.cpp
 	./src/control/smoother.cpp
 )
