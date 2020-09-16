@@ -5,25 +5,26 @@
 namespace snd {
 namespace audio {
 namespace filter {
+namespace serial {
 
-class Filter_2Pole_Stereo
+class Filter_2Pole_Mono
 {
 	int sr_;
 	float freq_;
 	float res_;
 
-	Filter_2Pole<ml::DSPVector> filters_[2];
+	Filter_2Pole filter_;
 
 public:
 
-	Filter_2Pole_Stereo();
+	Filter_2Pole_Mono();
 
-	ml::DSPVectorArray<2> lp() const;
-	ml::DSPVectorArray<2> bp() const;
-	ml::DSPVectorArray<2> hp() const;
-	ml::DSPVectorArray<2> peak() const;
+	float lp() const { return filter_.lp(); }
+	float bp() const { return filter_.bp(); }
+	float hp() const { return filter_.hp(); }
+	float peak() const { return filter_.peak(); }
 
-	void operator()(const ml::DSPVectorArray<2>& in);
+	void operator()(float in);
 
 	void set_freq(float freq, bool recalculate = true);
 	void set_res(float res, bool recalculate = true);
@@ -31,4 +32,5 @@ public:
 	void recalculate();
 };
 
-}}}
+
+}}}}

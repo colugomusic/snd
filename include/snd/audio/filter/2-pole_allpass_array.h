@@ -6,43 +6,37 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-template <int Size>
+template <int ROWS, int Size>
 class Filter_2Pole_AllpassArray
 {
-	Filter_2Pole_Allpass filters_[Size];
+	Filter_2Pole_Allpass<ROWS> filters_[Size];
+
+	int SR_ = 0;
+	DiffDetector<float, ROWS> diff_freq_;
+	DiffDetector<float, ROWS> diff_res_;
+
+	typename Filter_2Pole_Allpass<ROWS>::BQAP data_;
+
+	bool needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
 public:
 
-	Filter_2Pole_AllpassArray(const Filter_2Pole_Allpass::BQAP* data = nullptr);
-	//float operator()(float in);
-	ml::DSPVector operator()(const ml::DSPVector& in);
+	Filter_2Pole_AllpassArray(const typename Filter_2Pole_Allpass<ROWS>::BQAP* data = nullptr);
+	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in);
+	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
-	void copy(const Filter_2Pole_AllpassArray<Size>& rhs);
-
-	void set(const Filter_2Pole_Allpass::BQAP& bqap);
-	void set_external_data(const Filter_2Pole_Allpass::BQAP* data);
+	void set(const typename Filter_2Pole_Allpass<ROWS>::BQAP& bqap);
+	void set_external_data(const typename Filter_2Pole_Allpass<ROWS>::BQAP* data);
 };
 
-template <int Size>
-Filter_2Pole_AllpassArray<Size>::Filter_2Pole_AllpassArray(const Filter_2Pole_Allpass::BQAP* data)
+template <int ROWS, int Size>
+Filter_2Pole_AllpassArray<ROWS, Size>::Filter_2Pole_AllpassArray(const typename Filter_2Pole_Allpass<ROWS>::BQAP* data)
 {
-	if (data)
-	{
-		set_external_data(data);
-	}
+	set_external_data(&data_);
 }
 
-template <int Size>
-void Filter_2Pole_AllpassArray<Size>::copy(const Filter_2Pole_AllpassArray<Size>& rhs)
-{
-	for (int i = 0; i < Size; i++)
-	{
-		filters_[i].copy(rhs.filters_[i]);
-	}
-}
-
-template <int Size>
-void Filter_2Pole_AllpassArray<Size>::set_external_data(const Filter_2Pole_Allpass::BQAP* data)
+template <int ROWS, int Size>
+void Filter_2Pole_AllpassArray<ROWS, Size>::set_external_data(const typename Filter_2Pole_Allpass<ROWS>::BQAP* data)
 {
 	for (auto& filter : filters_)
 	{
@@ -50,21 +44,23 @@ void Filter_2Pole_AllpassArray<Size>::set_external_data(const Filter_2Pole_Allpa
 	}
 }
 
-//template <int Size>
-//float Filter_2Pole_AllpassArray<Size>::operator()(float in)
-//{
-//	for (auto& filter : filters_)
-//	{
-//		in = filter(in);
-//	}
-//
-//	return in;
-//}
+template <int ROWS, int Size>
+bool Filter_2Pole_AllpassArray<ROWS, Size>::needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
+{
+	if (SR != SR_)
+	{
+		SR_ = SR;
 
-template <int Size>
-ml::DSPVector Filter_2Pole_AllpassArray<Size>::operator()(const ml::DSPVector& in)
+		return true;
+	}
+
+	return diff_freq_(freq) || diff_res_(res);
+}
+
+template <int ROWS, int Size>
+ml::DSPVectorArray<ROWS> Filter_2Pole_AllpassArray<ROWS, Size>::operator()(const ml::DSPVectorArray<ROWS>& in)
 {	
-	ml::DSPVector out = in;
+	ml::DSPVectorArray<ROWS> out = in;
 
 	for (auto& filter : filters_)
 	{
@@ -74,8 +70,16 @@ ml::DSPVector Filter_2Pole_AllpassArray<Size>::operator()(const ml::DSPVector& i
 	return out;
 }
 
-template <int Size>
-void Filter_2Pole_AllpassArray<Size>::set(const Filter_2Pole_Allpass::BQAP& bqap)
+template <int ROWS, int Size>
+ml::DSPVectorArray<ROWS> Filter_2Pole_AllpassArray<ROWS, Size>::operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
+{
+	if (needs_recalc(SR, freq, res)) Filter_2Pole_Allpass<ROWS>::calculate(SR, freq, res, &data_);
+
+	return this->operator()(in);
+}
+
+template <int ROWS, int Size>
+void Filter_2Pole_AllpassArray<ROWS, Size>::set(const typename Filter_2Pole_Allpass<ROWS>::BQAP& bqap)
 {
 	for (auto& filter : filters_)
 	{

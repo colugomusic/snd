@@ -159,10 +159,12 @@ public:
 		return (retrieved_ = object_->get_next());
 	}
 
-	T* operator->() { return retrieved_; }
-	const T* operator->() const { return retrieved_; }
-	T& operator*() { return *retrieved_; }
-	const T& operator*() const { return *retrieved_; }
+	T* get() { return retrieved_; }
+	const T* get() const { return retrieved_; }
+	T* operator->() { return get(); }
+	const T* operator->() const { return get(); }
+	T& operator*() { return *get(); }
+	const T& operator*() const { return *get(); }
 };
 
 template <class T>
@@ -200,10 +202,12 @@ public:
 		object_->commit(setup);
 	}
 
-	T* operator->() { return object_->recent_; }
-	const T* operator->() const { return object_->recent_; }
-	T& operator*() { return *object_->recent_; }
-	const T& operator*() const { return *object_->recent_; }
+	T* get() { return object_->recent_; }
+	const T* get() const { return object_->recent_; }
+	T* operator->() { return get(); }
+	const T* operator->() const { return get(); }
+	T& operator*() { return *get(); }
+	const T& operator*() const { return *get(); }
 
 	operator bool() const { return object_->recent_; }
 };

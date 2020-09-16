@@ -1,5 +1,4 @@
-#include "audio/filter/2-pole_mono.h"
-#include <algorithm>
+#include "audio/filter/2-pole.h"
 
 namespace snd {
 namespace audio {

@@ -28,17 +28,19 @@ T soft_clip(T x, T threshold = 0.75)
 	return x;
 }
 
-ml::DSPVector hard_clip(const ml::DSPVector& in, float ceiling = 1.0f)
+template <int ROWS>
+ml::DSPVectorArray<ROWS> hard_clip(const ml::DSPVectorArray<ROWS>& in, float ceiling = 1.0f)
 {
 	return 0.5f * (ml::abs(in + ceiling) - ml::abs(in - ceiling));
 }
 
-ml::DSPVector soft_clip(const ml::DSPVector& in, float threshold = 0.75f)
+template <int ROWS>
+ml::DSPVectorArray<ROWS> soft_clip(const ml::DSPVectorArray<ROWS>& in, float threshold = 0.75f)
 {
 	auto magic = (1.0f - (threshold / in)) * (1.0f - threshold) + threshold;
 
-	auto is_high = ml::greaterThan(in, ml::DSPVector(threshold));
-	auto is_low = ml::lessThan(in, ml::DSPVector(-threshold));
+	auto is_high = ml::greaterThan(in, ml::DSPVectorArray<ROWS>(threshold));
+	auto is_low = ml::lessThan(in, ml::DSPVectorArray<ROWS>(-threshold));
 
 	return ml::select(magic, ml::select(magic - 2, in, is_low), is_high);
 }

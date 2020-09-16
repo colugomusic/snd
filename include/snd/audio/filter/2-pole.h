@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../misc.h"
+#include "../../diff_detector.h"
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
@@ -10,96 +11,118 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-template <class T>
+template <int ROWS>
 class Filter_2Pole
 {
-	float w_div_2_ = 0.0f;
-	float d_ = 0.0f;
-	float e_ = 0.0f;
-	float h_ = 0.0f;
-	float zdfbk_val_1_ = 0.0f;
-	float zdfbk_val_2_ = 0.0f;
+	ml::DSPVectorArray<ROWS> w_div_2_ = 0.0f;
+	ml::DSPVectorArray<ROWS> d_ = 0.0f;
+	ml::DSPVectorArray<ROWS> e_ = 0.0f;
+	float h_[ROWS];
+	float zdfbk_val_1_[ROWS];
+	float zdfbk_val_2_[ROWS];
 
-	T lp_ = 0.0f;
-	T bp_ = 0.0f;
-	T hp_ = 0.0f;
+	int SR_ = 0;
+	DiffDetector<float, ROWS> diff_freq_;
+	DiffDetector<float, ROWS> diff_res_;
+
+	ml::DSPVectorArray<ROWS> lp_ = 0.0f;
+	ml::DSPVectorArray<ROWS> bp_ = 0.0f;
+	ml::DSPVectorArray<ROWS> hp_ = 0.0f;
+
+	bool needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
 public:
 
-	const T& lp() const { return lp_; }
-	const T& bp() const { return bp_; }
-	const T& hp() const { return hp_; }
-	T peak() const { return lp_ - hp_; }
+	Filter_2Pole();
 
-	void operator()(const T& in) {}
+	const ml::DSPVectorArray<ROWS>& lp() const { return lp_; }
+	const ml::DSPVectorArray<ROWS>& bp() const { return bp_; }
+	const ml::DSPVectorArray<ROWS>& hp() const { return hp_; }
+	ml::DSPVectorArray<ROWS> peak() const { return lp_ - hp_; }
 
-	void set(float w_div_2, float d, float e);
+	void operator()(const ml::DSPVectorArray<ROWS>& in);
+	void operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
-	static void calculate(int sr, float freq, float res, float* w_div_2, float* d, float* e);
+	static void calculate(int sr, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res, ml::DSPVectorArray<ROWS>* w_div_2, ml::DSPVectorArray<ROWS>* d, ml::DSPVectorArray<ROWS>* e);
 };
 
-template <>
-void Filter_2Pole<float>::operator()(const float& in)
+template <int ROWS>
+Filter_2Pole<ROWS>::Filter_2Pole()
 {
-	h_ = zdfbk_val_1_ + (zdfbk_val_2_ * d_);
-
-	auto a = in - h_;
-
-	hp_ = a / e_;
-
-	auto b = hp_ * w_div_2_;
-
-	bp_ = b + zdfbk_val_2_;
-
-	auto c = bp_ * w_div_2_;
-
-	lp_ = c + zdfbk_val_1_;
-
-	zdfbk_val_1_ = c + lp_;
-	zdfbk_val_2_ = b + bp_;
-}
-
-template <>
-void Filter_2Pole<ml::DSPVector>::operator()(const ml::DSPVector& in)
-{
-	for (int i = 0; i < kFloatsPerDSPVector; i++)
+	for (int r = 0; r < ROWS; r++)
 	{
-		h_ = zdfbk_val_1_ + (zdfbk_val_2_ * d_);
-
-		auto a = in[i] - h_;
-
-		hp_[i] = a / e_;
-
-		auto b = hp_[i] * w_div_2_;
-
-		bp_[i] = b + zdfbk_val_2_;
-
-		auto c = bp_[i] * w_div_2_;
-
-		lp_[i] = c + zdfbk_val_1_;
-
-		zdfbk_val_1_ = c + lp_[i];
-		zdfbk_val_2_ = b + bp_[i];
+		h_[r] = 0.0f;
+		zdfbk_val_1_[r] = 0.0f;
+		zdfbk_val_2_[r] = 0.0f;
 	}
 }
 
-template <class T>
-void Filter_2Pole<T>::set(float w_div_2, float d, float e)
+template <int ROWS>
+bool Filter_2Pole<ROWS>::needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
 {
-	w_div_2_ = w_div_2;
-	d_ = d;
-	e_ = e;
+	if (SR != SR_)
+	{
+		SR_ = SR;
+
+		return true;
+	}
+
+	return diff_freq_(freq) || diff_res_(res);
 }
 
-template <class T>
-void Filter_2Pole<T>::calculate(int sr, float freq, float res, float* w_div_2, float* d, float* e)
+template <int ROWS>
+void Filter_2Pole<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 {
-	res = 2.f * (1.f - std::min(0.96875f, res));
+	for (int r = 0; r < ROWS; r++)
+	{
+		const auto& row_in = in.constRow(r);
+		const auto& wdiv_2 = w_div_2_.constRow(r);
+		const auto& d = d_.constRow(r);
+		const auto& e = e_.constRow(r);
 
-	*w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(float(sr), freq);
+		auto& lp = lp_.row(r);
+		auto& bp = bp_.row(r);
+		auto& hp = hp_.row(r);
 
-	*d = res + *w_div_2;
-	*e = (*d * *w_div_2) + 1.f;
+		for (int i = 0; i < kFloatsPerDSPVector; i++)
+		{
+			h_[r] = zdfbk_val_1_[r] + (zdfbk_val_2_[r] * d[i]);
+
+			auto a = row_in[i] - h_[r];
+
+			hp[i] = a / e[i];
+
+			auto b = hp[i] * wdiv_2[i];
+
+			bp[i] = b + zdfbk_val_2_[r];
+
+			auto c = bp[i] * wdiv_2[i];
+
+			lp[i] = c + zdfbk_val_1_[r];
+
+			zdfbk_val_1_[r] = c + lp[i];
+			zdfbk_val_2_[r] = b + bp[i];
+		}
+	}
+}
+
+template <int ROWS>
+void Filter_2Pole<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
+{
+	if (needs_recalc(SR, freq, res)) calculate(SR, freq, res, &w_div_2_, &d_, &e_);
+
+	this->operator()(in);
+}
+
+template <int ROWS>
+void Filter_2Pole<ROWS>::calculate(int sr, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res, ml::DSPVectorArray<ROWS>* w_div_2, ml::DSPVectorArray<ROWS>* d, ml::DSPVectorArray<ROWS>* e)
+{
+	auto r = 2.0f * (1.0f - ml::min(ml::DSPVectorArray<ROWS>(0.96875f), res));
+
+	*w_div_2 = blt_prewarp_rat_0_08ct_sr_div_2(sr, freq);
+
+	*d = r + *w_div_2;
+	*e = (*d * *w_div_2) + 1.0f;
 }
 
 }}}

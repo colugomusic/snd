@@ -2,6 +2,10 @@
 
 #include <algorithm>
 
+#pragma warning(push, 0)
+#include <DSP/MLDSPOps.h>
+#pragma warning(pop)
+
 namespace snd {
 
 constexpr auto PI = 3.14159265358979f;
@@ -18,18 +22,18 @@ inline void flush_denormal_to_zero(float& x)
 template <class T>
 T tan_rational(T in)
 {
-	auto a = (in * T(-0.0896638)) + T(0.0388452);
-	auto b = (in * T(-0.430871)) + T(0.0404318);
-	auto c = (a * in) + T(1.00005);
-	auto d = (b * in) + T(1);
+	auto a = (in * T(-0.0896638f)) + T(0.0388452f);
+	auto b = (in * T(-0.430871f)) + T(0.0404318f);
+	auto c = (a * in) + T(1.00005f);
+	auto d = (b * in) + T(1.f);
 
 	return (c * in) / d;
 }
 
 template <class T>
-T blt_prewarp_rat_0_08ct_sr_div_2(T sr, T freq)
+T blt_prewarp_rat_0_08ct_sr_div_2(int SR, const T& freq)
 {
-	return tan_rational(std::min(T(1.50845), (T(PI) / sr) * freq));
+	return tan_rational(ml::min(T(1.50845f), (T(PI) / float(SR)) * freq));
 }
 
 template <class T> T lerp(T a, T b, T x)
