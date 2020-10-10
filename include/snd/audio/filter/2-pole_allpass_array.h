@@ -25,6 +25,7 @@ public:
 	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in);
 	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
+	void clear();
 	void set(const typename Filter_2Pole_Allpass<ROWS>::BQAP& bqap);
 	void set_external_data(const typename Filter_2Pole_Allpass<ROWS>::BQAP* data);
 };
@@ -76,6 +77,15 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_AllpassArray<ROWS, Size>::operator()(const
 	if (needs_recalc(SR, freq, res)) Filter_2Pole_Allpass<ROWS>::calculate(SR, freq, res, &data_);
 
 	return this->operator()(in);
+}
+
+template <int ROWS, int Size>
+void Filter_2Pole_AllpassArray<ROWS, Size>::clear()
+{
+	for (auto& filter : filters_)
+	{
+		filter.clear();
+	}
 }
 
 template <int ROWS, int Size>

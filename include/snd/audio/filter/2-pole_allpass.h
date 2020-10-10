@@ -46,7 +46,7 @@ public:
 	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in);
 	ml::DSPVectorArray<ROWS> operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res);
 
-	void set(const BQAP& bqap);
+	void clear();
 	void set_external_data(const BQAP* data);
 
 	static void calculate(int sr, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res, BQAP* bqap);
@@ -71,13 +71,7 @@ template <int ROWS>
 Filter_2Pole_Allpass<ROWS>::Filter_2Pole_Allpass(const BQAP* data)
 	: data_(data ? data : &bqap_)
 {
-	for (int r = 0; r < ROWS; r++)
-	{
-		fbk_val_0_[r] = 0.0f;
-		fbk_val_1_[r] = 0.0f;
-		fbk_val_2_[r] = 0.0f;
-		fbk_val_3_[r] = 0.0f;
-	}
+	clear();
 }
 
 template <int ROWS>
@@ -135,6 +129,18 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVec
 	if (!data_ && needs_recalc(SR, freq, res)) calculate(SR, freq, res, &bqap_);
 
 	return this->operator()(in);
+}
+
+template <int ROWS>
+void Filter_2Pole_Allpass<ROWS>::clear()
+{
+	for (int r = 0; r < ROWS; r++)
+	{
+		fbk_val_0_[r] = 0.0f;
+		fbk_val_1_[r] = 0.0f;
+		fbk_val_2_[r] = 0.0f;
+		fbk_val_3_[r] = 0.0f;
+	}
 }
 
 template <int ROWS>
