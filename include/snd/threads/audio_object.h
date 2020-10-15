@@ -143,6 +143,11 @@ public:
 		return object_->pending();
 	}
 
+	T* get_next_if_pending()
+	{
+		return pending() ? get_next() : nullptr;
+	}
+
 	T* get_next()
 	{
 		if (current_) object_->dispose(current_);
@@ -200,6 +205,12 @@ public:
 	void commit(AudioObjectSetup<T>& setup)
 	{
 		object_->commit(setup);
+	}
+
+	template <class ...Args>
+	void commit_new(Args... args)
+	{
+		object_->commit(make_new(args...));
 	}
 
 	T* get() { return object_->recent_; }
