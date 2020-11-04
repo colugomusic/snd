@@ -1,6 +1,7 @@
 project(snd)
 
 set(dir_madronalib ${CMAKE_CURRENT_LIST_DIR}/submodules/madronalib)
+set(dir_readerwriterqueue ${CMAKE_CURRENT_LIST_DIR}/submodules/readerwriterqueue)
 
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
@@ -23,6 +24,9 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/threads/audio_object.h
 	./include/snd/threads/audio_object_manager.h
 	./include/snd/threads/garbage_disposal.h
+	./include/snd/threads/msg/audio_gui_comms.h
+	./include/snd/threads/msg/msg_channel.h
+	./include/snd/threads/msg/msg_comms.h
 )
 
 list(APPEND SRC
@@ -30,6 +34,8 @@ list(APPEND SRC
 	./src/audio/filter/serial/2-pole_mono.cpp
 	./src/clock/clock_divider.cpp
 	./src/control/smoother.cpp
+	./src/threads/msg/audio_gui_comms.cpp
+	./src/threads/msg/msg_channel.cpp
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
@@ -43,4 +49,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${dir_madronalib}/source
+	${dir_readerwriterqueue}
 )
