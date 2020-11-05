@@ -8,7 +8,6 @@ namespace msg {
 
 /*
 * Two way communication channel intended for sending messages between audio and GUI
-* By default audio_run() will not allocate, gui_run() may allocate. Can be overridden.
 */
 class AudioGuiComms : public Comms<2>
 {
@@ -22,7 +21,7 @@ public:
 	template <bool MAY_ALLOCATE = false>
 	bool audio_run(Channel::Task task);
 
-	template <bool MAY_ALLOCATE = true>
+	template <bool MAY_ALLOCATE = false>
 	bool gui_run(Channel::Task task);
 
 	void run_audio_tasks(int max = 0);
