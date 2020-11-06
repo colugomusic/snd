@@ -6,12 +6,12 @@
 namespace snd {
 namespace storage {
 
-template <class T>
+template <class T, class Allocator = std::allocator<T>>
 class CircularBuffer
 {
 public:
 
-	using Data = std::vector<T>;
+	using Data = std::vector<T, Allocator>;
 
 	template <bool Const = false>
 	class iterator
@@ -144,10 +144,10 @@ private:
 	Data data_;
 };
 
-template <class T, size_t ROWS>
+template <class T, size_t ROWS, class Allocator = std::allocator<T>>
 class CircularBufferArray
 {
-	using Buffers = std::array<CircularBuffer<T>, ROWS>;
+	using Buffers = std::array<CircularBuffer<T, Allocator>, ROWS>;
 
 	Buffers buffers_;
 
@@ -170,12 +170,12 @@ public:
 
 	typename Buffers::size_type size() const { return buffers_[0].size(); }
 
-	CircularBuffer<T>& operator[](typename Buffers::size_type idx)
+	CircularBuffer<T, Allocator>& operator[](typename Buffers::size_type idx)
 	{
 		return buffers_[idx];
 	}
 
-	const CircularBuffer<T>& operator[](typename Buffers::size_type idx) const
+	const CircularBuffer<T, Allocator>& operator[](typename Buffers::size_type idx) const
 	{
 		return buffers_.at(idx);
 	}
