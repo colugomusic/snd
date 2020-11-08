@@ -19,6 +19,22 @@ inline void flush_denormal_to_zero(float& x)
 	x -= DENORMAL_DC;
 }
 
+template <size_t ROWS>
+inline ml::DSPVectorArray<ROWS> flush_denormal_to_zero(const ml::DSPVectorArray<ROWS>& in)
+{
+	ml::DSPVectorArray<ROWS> out;
+
+	for (int i = 0; i < kFloatsPerDSPVector; i++)
+	{
+		out = in;
+
+		out[i] += DENORMAL_DC;
+		out[i] -= DENORMAL_DC;
+	}
+
+	return out;
+}
+
 template <class T>
 T tan_rational(T in)
 {
