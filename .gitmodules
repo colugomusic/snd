@@ -4,3 +4,6 @@
 [submodule "submodules/readerwriterqueue"]
 	path = submodules/readerwriterqueue
 	url = https://github.com/cameron314/readerwriterqueue
+[submodule "submodules/dr_libs"]
+	path = submodules/dr_libs
+	url = https://github.com/mackron/dr_libs.git
