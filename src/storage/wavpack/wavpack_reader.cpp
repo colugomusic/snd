@@ -51,16 +51,16 @@ bool Reader::try_read_header()
 
 	if ((mode & MODE_FLOAT) == MODE_FLOAT)
 	{
-		chunk_reader_ = [this](float* buffer, std::uint32_t read_size) -> std::uint32_t
+		chunk_reader_ = [this](float* buffer, std::uint32_t read_size)
 		{
-			if (WavpackUnpackSamples(context_, reinterpret_cast<int32_t*>(buffer), read_size) != read_size) return 0;
+			if (WavpackUnpackSamples(context_, reinterpret_cast<int32_t*>(buffer), read_size) != read_size) return false;
 
-			return read_size;
+			return true;
 		};
 	}
 	else
 	{
-		chunk_reader_ = [this](float* buffer, std::uint32_t read_size) -> std::uint32_t
+		chunk_reader_ = [this](float* buffer, std::uint32_t read_size)
 		{
 			const auto divisor = (1 << (bit_depth_ - 1)) - 1;
 
@@ -68,14 +68,14 @@ bool Reader::try_read_header()
 
 			const auto frames_read = WavpackUnpackSamples(context_, frames.data(), read_size);
 
-			if (frames_read != read_size) return 0;
+			if (frames_read != read_size) return false;
 
 			for (std::uint32_t i = 0; i < read_size * num_channels_; i++)
 			{
 				buffer[i] = float(frames[i]) / divisor;
 			}
 
-			return read_size;
+			return true;
 		};
 	}
 

@@ -19,7 +19,7 @@ class Reader
 	FrameCount num_frames_ = 0;
 	SampleRate sample_rate_ = 0;
 	BitDepth bit_depth_ = 0;
-	std::function<std::uint32_t(float* buffer, std::uint32_t read_size)> chunk_reader_;
+	std::function<bool(float* buffer, std::uint32_t read_size)> chunk_reader_;
 
 public:
 
