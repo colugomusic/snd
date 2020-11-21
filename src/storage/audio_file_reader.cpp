@@ -216,9 +216,6 @@ auto AudioFileReader::make_wavpack_handler() -> FormatHandler
 	const auto read_frames = [this](Callbacks callbacks, std::uint32_t chunk_size)
 	{
 		wavpack::Reader reader(utf8_path_);
-
-		if (!reader.try_read_header()) throw std::runtime_error("Read Error");
-
 		wavpack::Reader::Callbacks reader_callbacks;
 
 		reader_callbacks.return_chunk = callbacks.return_chunk;
