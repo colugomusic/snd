@@ -53,9 +53,7 @@ bool Reader::try_read_header()
 	{
 		chunk_reader_ = [this](float* buffer, std::uint32_t read_size)
 		{
-			if (WavpackUnpackSamples(context_, reinterpret_cast<int32_t*>(buffer), read_size) != read_size) return false;
-
-			return true;
+			return WavpackUnpackSamples(context_, reinterpret_cast<int32_t*>(buffer), read_size) == read_size;
 		};
 	}
 	else
