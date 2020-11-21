@@ -74,6 +74,8 @@ bool Reader::try_read_header()
 			{
 				buffer[i] = float(frames[i]) / divisor;
 			}
+
+			return read_size;
 		};
 	}
 
