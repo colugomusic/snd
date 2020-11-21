@@ -3,6 +3,10 @@ project(snd)
 set(dir_madronalib ${CMAKE_CURRENT_LIST_DIR}/submodules/madronalib)
 set(dir_readerwriterqueue ${CMAKE_CURRENT_LIST_DIR}/submodules/readerwriterqueue)
 set(dir_dr_libs ${CMAKE_CURRENT_LIST_DIR}/submodules/dr_libs)
+set(dir_wavpack ${CMAKE_CURRENT_LIST_DIR}/submodules/wavpack)
+set(dir_utfcpp ${CMAKE_CURRENT_LIST_DIR}/submodules/utfcpp)
+
+add_subdirectory(${dir_wavpack} wavpack)
 
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
@@ -44,6 +48,8 @@ list(APPEND SRC
 	./src/threads/msg/audio_gui_comms.cpp
 	./src/threads/msg/msg_channel.cpp
 	./src/storage/audio_file_reader.cpp
+	./src/storage/wavpack/wavpack_reader.h
+	./src/storage/wavpack/wavpack_reader.cpp
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
@@ -51,10 +57,16 @@ source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/src PREFIX src FILES ${SRC})
 
 add_library(${PROJECT_NAME} STATIC ${PUBLIC_HEADERS} ${SRC})
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
 	./include
 	./include/snd
 	${dir_dr_libs}
+	${dir_wavpack}/include
+	${dir_utfcpp}/source
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

@@ -7,3 +7,9 @@
 [submodule "submodules/dr_libs"]
 	path = submodules/dr_libs
 	url = https://github.com/mackron/dr_libs.git
+[submodule "submodules/wavpack"]
+	path = submodules/wavpack
+	url = https://github.com/dbry/WavPack.git
+[submodule "submodules/utfcpp"]
+	path = submodules/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git

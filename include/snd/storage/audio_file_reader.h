@@ -16,13 +16,6 @@ namespace storage {
 class AudioFileReader
 {
 public:
-
-	using FilePath =
-		#ifdef _WIN32
-		std::wstring;
-		#else
-		std::string;
-		#endif
 	
 	struct Callbacks
 	{
@@ -56,7 +49,7 @@ private:
 	FormatHandler make_wav_handler();
 	FormatHandler make_wavpack_handler();
 
-	FilePath path_;
+	std::string utf8_path_;
 	AudioFileFormat format_hint_ = AudioFileFormat::None;
 	ChannelCount num_channels_ = 0;
 	FrameCount num_frames_ = 0;
@@ -67,7 +60,7 @@ private:
 
 public:
 
-	AudioFileReader(const FilePath& path, AudioFileFormat format_hint = AudioFileFormat::None);
+	AudioFileReader(const std::string& utf8_path, AudioFileFormat format_hint = AudioFileFormat::None);
 
 	void read_header();
 
