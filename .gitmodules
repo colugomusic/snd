@@ -13,3 +13,6 @@
 [submodule "submodules/utfcpp"]
 	path = submodules/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
+[submodule "submodules/miniaudio"]
+	path = submodules/miniaudio
+	url = https://github.com/mackron/miniaudio.git

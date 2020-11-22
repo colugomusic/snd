@@ -22,6 +22,17 @@ public:
 		ReturnChunkFunc return_chunk;
 	};
 
+	AudioFileReader(const std::string& utf8_path, AudioFileFormat format_hint = AudioFileFormat::None);
+
+	void read_header();
+	void read_frames(Callbacks callbacks, std::uint32_t chunk_size);
+
+	ChannelCount get_num_channels() const { return num_channels_; }
+	FrameCount get_num_frames() const { return num_frames_; }
+	SampleRate get_sample_rate() const { return sample_rate_; }
+	BitDepth get_bit_depth() const { return bit_depth_; }
+	AudioFileFormat get_format() const { return active_format_handler_.format; }
+
 private:
 
 	struct FormatHandler
@@ -53,20 +64,6 @@ private:
 	BitDepth bit_depth_ = 0;
 
 	std::array<FormatHandler, 4> make_format_attempt_order(AudioFileFormat format);
-
-public:
-
-	AudioFileReader(const std::string& utf8_path, AudioFileFormat format_hint = AudioFileFormat::None);
-
-	void read_header();
-
-	void read_frames(Callbacks callbacks, std::uint32_t chunk_size);
-
-	ChannelCount get_num_channels() const { return num_channels_; }
-	FrameCount get_num_frames() const { return num_frames_; }
-	SampleRate get_sample_rate() const { return sample_rate_; }
-	BitDepth get_bit_depth() const { return bit_depth_; }
-	AudioFileFormat get_format() const { return active_format_handler_.format; }
 };
 
 }}

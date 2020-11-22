@@ -3,6 +3,7 @@ project(snd)
 set(dir_madronalib ${CMAKE_CURRENT_LIST_DIR}/submodules/madronalib)
 set(dir_readerwriterqueue ${CMAKE_CURRENT_LIST_DIR}/submodules/readerwriterqueue)
 set(dir_dr_libs ${CMAKE_CURRENT_LIST_DIR}/submodules/dr_libs)
+set(dir_miniaudio ${CMAKE_CURRENT_LIST_DIR}/submodules/miniaudio)
 set(dir_wavpack ${CMAKE_CURRENT_LIST_DIR}/submodules/wavpack)
 set(dir_utfcpp ${CMAKE_CURRENT_LIST_DIR}/submodules/utfcpp)
 
@@ -29,6 +30,7 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/control/smoother.h
 	./include/snd/storage/audio_file_format.h
 	./include/snd/storage/audio_file_reader.h
+	./include/snd/storage/audio_file_writer.h
 	./include/snd/storage/circular_buffer.h
 	./include/snd/storage/frame_data.h
 	./include/snd/storage/interleaving.h
@@ -48,6 +50,12 @@ list(APPEND SRC
 	./src/threads/msg/audio_gui_comms.cpp
 	./src/threads/msg/msg_channel.cpp
 	./src/storage/audio_file_reader.cpp
+	./src/storage/audio_file_writer.cpp
+	./src/storage/dr_libs/dr_libs_impl.cpp
+	./src/storage/dr_libs/dr_libs_utils.h
+	./src/storage/dr_libs/dr_libs_utils.cpp
+	./src/storage/miniaudio/snd_miniaudio.h
+	./src/storage/miniaudio/snd_miniaudio.cpp
 	./src/storage/wavpack/wavpack_reader.h
 	./src/storage/wavpack/wavpack_reader.cpp
 )
@@ -65,6 +73,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	./include
 	./include/snd
 	${dir_dr_libs}
+	${dir_miniaudio}
 	${dir_wavpack}/include
 	${dir_utfcpp}/source
 )

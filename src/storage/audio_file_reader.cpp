@@ -1,16 +1,9 @@
 #include "storage/audio_file_reader.h"
 #include <array>
 #include <stdexcept>
-#define DR_FLAC_IMPLEMENTATION
-#define DR_MP3_IMPLEMENTATION
-#define DR_WAV_IMPLEMENTATION
-#include <dr_flac.h>
-#include <dr_wav.h>
-#include <dr_mp3.h>
+#include "dr_libs/dr_libs_utils.h"
 #include <snd/storage/interleaving.h>
 #include "wavpack/wavpack_reader.h"
-#define UTF_CPP_CPLUSPLUS 201703L
-#include <utf8.h>
 
 namespace snd {
 namespace storage {
@@ -49,22 +42,9 @@ static void generic_dr_libs_frame_reader_loop(
 
 auto AudioFileReader::make_flac_handler() -> FormatHandler
 {
-	const auto open_file =
-	#ifdef _WIN32
-		[](const std::string& utf8_path)
-		{
-			return drflac_open_file_w((const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), nullptr);
-		};
-	#else
-		[](const std::string& utf8_path)
-		{
-			return drflac_open_file(utf8_path.c_str(), nullptr);
-		};
-	#endif
-
-	const auto try_read_header = [this, open_file]() -> bool
+	const auto try_read_header = [this]() -> bool
 	{
-		auto flac = open_file(utf8_path_);
+		auto flac = dr_libs::flac::open_file(utf8_path_);
 
 		if (!flac) return false;
 
@@ -78,9 +58,9 @@ auto AudioFileReader::make_flac_handler() -> FormatHandler
 		return true;
 	};
 
-	const auto read_frames = [this, open_file](Callbacks callbacks, std::uint32_t chunk_size)
+	const auto read_frames = [this](Callbacks callbacks, std::uint32_t chunk_size)
 	{
-		auto flac = open_file(utf8_path_);
+		auto flac = dr_libs::flac::open_file(utf8_path_);
 
 		if (!flac) throw std::runtime_error("Read error");
 
@@ -99,24 +79,11 @@ auto AudioFileReader::make_flac_handler() -> FormatHandler
 
 auto AudioFileReader::make_mp3_handler() -> FormatHandler
 {
-	const auto init_file =
-	#ifdef _WIN32
-		[](drmp3* mp3, const std::string& utf8_path)
-		{
-			return drmp3_init_file_w(mp3, (const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), nullptr);
-		};
-	#else
-		[](drmp3* mp3, const std::string& utf8_path)
-		{
-			return drmp3_init_file(mp3, utf8_path.c_str(), nullptr);
-		};
-	#endif
-
-	const auto try_read_header = [this, init_file]()
+	const auto try_read_header = [this]()
 	{
 		drmp3 mp3;
 
-		if (!init_file(&mp3, utf8_path_)) return false;
+		if (!dr_libs::mp3::init_file(&mp3, utf8_path_)) return false;
 
 		num_channels_ = mp3.channels;
 		num_frames_ = FrameCount(drmp3_get_pcm_frame_count(&mp3));
@@ -128,11 +95,11 @@ auto AudioFileReader::make_mp3_handler() -> FormatHandler
 		return true;
 	};
 
-	const auto read_frames = [this, init_file](Callbacks callbacks, std::uint32_t chunk_size)
+	const auto read_frames = [this](Callbacks callbacks, std::uint32_t chunk_size)
 	{
 		drmp3 mp3;
 
-		if (!init_file(&mp3, utf8_path_)) throw std::runtime_error("Read error");
+		if (!dr_libs::mp3::init_file(&mp3, utf8_path_)) throw std::runtime_error("Read error");
 
 		const auto read_func = [&mp3](float* buffer, std::uint32_t read_size)
 		{
@@ -149,24 +116,11 @@ auto AudioFileReader::make_mp3_handler() -> FormatHandler
 
 auto AudioFileReader::make_wav_handler() -> FormatHandler
 {
-	const auto init_file =
-	#ifdef _WIN32
-		[](drwav* wav, const std::string& utf8_path)
-		{
-			return drwav_init_file_w(wav, (const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), nullptr);
-		};
-	#else
-		[](drwav* wav, const std::string& utf8_path)
-		{
-			return drwav_init_file(wav, utf8_path.c_str(), nullptr);
-		};
-	#endif
-
-	const auto try_read_header = [this, init_file]()
+	const auto try_read_header = [this]()
 	{
 		drwav wav;
 
-		if (!init_file(&wav, utf8_path_)) return false;
+		if (!dr_libs::wav::init_file(&wav, utf8_path_)) return false;
 
 		num_channels_ = wav.channels;
 		num_frames_ = FrameCount(wav.totalPCMFrameCount);
@@ -178,11 +132,11 @@ auto AudioFileReader::make_wav_handler() -> FormatHandler
 		return true;
 	};
 
-	const auto read_frames = [this, init_file](Callbacks callbacks, std::uint32_t chunk_size)
+	const auto read_frames = [this](Callbacks callbacks, std::uint32_t chunk_size)
 	{
 		drwav wav;
 
-		if (!init_file(&wav, utf8_path_)) throw std::runtime_error("Read error");
+		if (!dr_libs::wav::init_file(&wav, utf8_path_)) throw std::runtime_error("Read error");
 
 		const auto read_func = [&wav](float* buffer, std::uint32_t read_size)
 		{
