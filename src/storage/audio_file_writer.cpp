@@ -1,7 +1,11 @@
 #include "storage/audio_file_writer.h"
+#include <fstream>
 #include <stdexcept>
 #include "dr_libs/dr_libs_utils.h"
 #include "miniaudio/snd_miniaudio.h"
+#include <wavpack.h>
+#define UTF_CPP_CPLUSPLUS 201703L
+#include <utf8.h>
 
 namespace snd {
 namespace storage {
@@ -172,7 +176,96 @@ auto AudioFileWriter::make_wavpack_handler(const StreamWriter& stream, const For
 
 auto AudioFileWriter::make_wavpack_handler(const std::string& utf8_path, const Format& format) -> FormatHandler
 {
-	return FormatHandler();
+	const auto write_func = [utf8_path, format](Callbacks callbacks, std::uint32_t chunk_size)
+	{
+		struct FileWriter
+		{
+			std::ofstream file;
+		};
+
+		const auto blockout = [](void* id, void* data, int32_t bcount) -> int
+		{
+			auto file_write = (FileWriter*)(id);
+
+			file_write->file.write((const char*)(data), bcount);
+			
+			if (file_write->file.fail()) return 0;
+
+			return 1;
+		};
+
+		FileWriter file_write;
+
+		file_write.file.open((const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), std::fstream::binary);
+
+		const auto context = WavpackOpenFileOutput(blockout, &file_write, nullptr);
+
+		constexpr auto CFG_MONO = 4;
+		constexpr auto CFG_STEREO = 3;
+
+		WavpackConfig config = { 0 };
+
+		config.bytes_per_sample = format.bit_depth / 8;
+		config.bits_per_sample = format.bit_depth;
+		config.channel_mask = format.num_channels == 1 ? CFG_MONO : CFG_STEREO;
+		config.num_channels = format.num_channels;
+		config.sample_rate = format.sample_rate;
+
+		if (!WavpackSetConfiguration64(context, &config, format.num_frames, nullptr))
+		{
+			throw std::runtime_error(WavpackGetErrorMessage(context));
+		}
+
+		if (!WavpackPackInit(context))
+		{
+			throw std::runtime_error(WavpackGetErrorMessage(context));
+		}
+
+		FrameCount frame = 0;
+
+		while (frame < format.num_frames)
+		{
+			if (callbacks.should_abort()) break;
+
+			auto write_size = chunk_size;
+
+			if (frame + write_size >= format.num_frames)
+			{
+				write_size = format.num_frames - frame;
+			}
+
+			std::vector<float> interleaved_frames(size_t(write_size) * format.num_channels);
+
+			callbacks.get_next_chunk(interleaved_frames.data(), frame, write_size);
+
+			std::vector<std::int32_t> samples(size_t(write_size)* format.num_channels);
+
+			const auto scale = (1 << (format.bit_depth - 1)) - 1;
+
+			for (int i = 0; i < samples.size(); i++)
+			{
+				samples[i] = std::int32_t(interleaved_frames[i] * scale);
+			}
+
+			if (!WavpackPackSamples(context, samples.data(), write_size))
+			{
+				throw std::runtime_error("Write error");
+			}
+
+			frame += write_size;
+
+			callbacks.report_progress(frame);
+		}
+
+		if (!WavpackFlushSamples(context))
+		{
+			throw std::runtime_error("Write error");
+		}
+
+		WavpackCloseFile(context);
+	};
+
+	return { write_func };
 }
 
 auto AudioFileWriter::make_format_handler(const StreamWriter& stream, const Format& format) -> FormatHandler
