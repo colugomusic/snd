@@ -12,8 +12,6 @@ namespace wavpack {
 
 class Reader
 {
-	std::string path_;
-
 	WavpackContext* context_ = nullptr;
 	ChannelCount num_channels_ = 0;
 	FrameCount num_frames_ = 0;
@@ -21,6 +19,7 @@ class Reader
 	BitDepth bit_depth_ = 0;
 	std::function<bool(float* buffer, std::uint32_t read_size)> chunk_reader_;
 
+	virtual WavpackContext* open() = 0;
 public:
 
 	struct Callbacks
@@ -32,7 +31,6 @@ public:
 		ReturnChunkFunc return_chunk;
 	};
 
-	Reader(const std::string& utf8_path);
 	~Reader();
 
 	ChannelCount get_num_channels() const { return num_channels_; }

@@ -7,11 +7,6 @@ namespace snd {
 namespace storage {
 namespace wavpack {
 
-Reader::Reader(const std::string& utf8_path)
-	: path_(utf8_path)
-{
-}
-
 Reader::~Reader()
 {
 	if (context_)
@@ -20,25 +15,9 @@ Reader::~Reader()
 	}
 }
 
-static WavpackContext* open_file(const std::string& path)
-{
-	int flags = 0;
-
-	flags |= OPEN_2CH_MAX;
-	flags |= OPEN_NORMALIZE;
-
-#ifdef _WIN32
-	flags |= OPEN_FILE_UTF8;
-#endif
-
-	char error[80];
-
-	return WavpackOpenFileInput(path.c_str(), error, flags, 0);
-}
-
 bool Reader::try_read_header()
 {
-	context_ = open_file(path_);
+	context_ = open();
 
 	if (!context_) return false;
 

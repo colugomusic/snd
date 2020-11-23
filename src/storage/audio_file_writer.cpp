@@ -87,7 +87,7 @@ static void drwav_write_frames(drwav* wav, AudioFileWriter::Callbacks callbacks,
 
 	while (frame < format.num_frames)
 	{
-		if (callbacks.should_abort()) break;
+		if (callbacks.should_abort && callbacks.should_abort()) break;
 
 		auto write_size = chunk_size;
 
@@ -107,7 +107,7 @@ static void drwav_write_frames(drwav* wav, AudioFileWriter::Callbacks callbacks,
 
 		frame += write_size;
 
-		callbacks.report_progress(frame);
+		if (callbacks.report_progress) callbacks.report_progress(frame);
 	}
 }
 
@@ -198,7 +198,7 @@ static void wavpack_write_file(WavpackBlockOutput blockout, void* id, const Audi
 
 	while (frame < format.num_frames)
 	{
-		if (callbacks.should_abort()) break;
+		if (callbacks.should_abort && callbacks.should_abort()) break;
 
 		auto write_size = chunk_size;
 
@@ -227,7 +227,7 @@ static void wavpack_write_file(WavpackBlockOutput blockout, void* id, const Audi
 
 		frame += write_size;
 
-		callbacks.report_progress(frame);
+		if (callbacks.report_progress) callbacks.report_progress(frame);
 	}
 
 	if (!WavpackFlushSamples(context))

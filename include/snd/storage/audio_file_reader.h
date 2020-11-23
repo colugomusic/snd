@@ -22,15 +22,26 @@ public:
 		ReturnChunkFunc return_chunk;
 	};
 
+	struct Format
+	{
+		ChannelCount num_channels = 0;
+		FrameCount num_frames = 0;
+		SampleRate sample_rate = 0;
+		BitDepth bit_depth = 0;
+	};
+
 	AudioFileReader(const std::string& utf8_path, AudioFileFormat format_hint = AudioFileFormat::None);
+
+	// Read from memory. Currently only implemented for FLAC and WavPack (no technical reason, just laziness)
+	AudioFileReader(const void* data, std::size_t data_size, AudioFileFormat format_hint = AudioFileFormat::None);
 
 	void read_header();
 	void read_frames(Callbacks callbacks, std::uint32_t chunk_size);
 
-	ChannelCount get_num_channels() const { return num_channels_; }
-	FrameCount get_num_frames() const { return num_frames_; }
-	SampleRate get_sample_rate() const { return sample_rate_; }
-	BitDepth get_bit_depth() const { return bit_depth_; }
+	ChannelCount get_num_channels() const { return format_.num_channels; }
+	FrameCount get_num_frames() const { return format_.num_frames; }
+	SampleRate get_sample_rate() const { return format_.sample_rate; }
+	BitDepth get_bit_depth() const { return format_.bit_depth; }
 	AudioFileFormat get_format() const { return active_format_handler_.format; }
 
 private:
@@ -41,8 +52,11 @@ private:
 		using ReadFramesFunc = std::function<void(Callbacks, std::uint32_t)>;
 
 		AudioFileFormat format = AudioFileFormat::None;
+
 		TryReadHeaderFunc try_read_header;
 		ReadFramesFunc read_frames;
+
+		operator bool() const { return format != AudioFileFormat::None; }
 	};
 
 	FormatHandler flac_handler_;
@@ -51,17 +65,15 @@ private:
 	FormatHandler wavpack_handler_;
 	FormatHandler active_format_handler_;
 
-	FormatHandler make_flac_handler();
-	FormatHandler make_mp3_handler();
-	FormatHandler make_wav_handler();
-	FormatHandler make_wavpack_handler();
+	FormatHandler make_flac_handler(const std::string& utf8_path);
+	FormatHandler make_flac_handler(const void* data, std::size_t data_size);
+	FormatHandler make_mp3_handler(const std::string& utf8_path);
+	FormatHandler make_wav_handler(const std::string& utf8_path);
+	FormatHandler make_wavpack_handler(const std::string& utf8_path);
+	FormatHandler make_wavpack_handler(const void* data, std::size_t data_size);
 
-	std::string utf8_path_;
 	AudioFileFormat format_hint_ = AudioFileFormat::None;
-	ChannelCount num_channels_ = 0;
-	FrameCount num_frames_ = 0;
-	SampleRate sample_rate_ = 0;
-	BitDepth bit_depth_ = 0;
+	Format format_;
 
 	std::array<FormatHandler, 4> make_format_attempt_order(AudioFileFormat format);
 };
