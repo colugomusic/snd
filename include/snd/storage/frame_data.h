@@ -33,6 +33,8 @@ public:
 		std::for_each(data_.begin(), data_.end(), [num_frames](ChannelData<T, Allocator>& data) { data.resize(num_frames); });
 	}
 
+	bool is_empty() const { return data_.empty(); }
+
 	ChannelCount get_num_channels() const { return num_channels_; }
 	FrameCount get_num_frames() const { return num_frames_; }
 
