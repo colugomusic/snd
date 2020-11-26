@@ -36,11 +36,19 @@ public:
 
 	FramePosition& operator+=(const FramePosition& rhs);
 	FramePosition& operator-=(const FramePosition& rhs);
+	FramePosition& operator+=(std::int32_t rhs);
+	FramePosition& operator-=(std::int32_t rhs);
+	FramePosition& operator+=(float rhs);
+	FramePosition& operator-=(float rhs);
 
 	bool operator<(const FramePosition& rhs) const;
 	bool operator<=(const FramePosition& rhs) const;
 	bool operator>(const FramePosition& rhs) const;
 	bool operator>=(const FramePosition& rhs) const;
+	bool operator<(std::int32_t rhs) const;
+	bool operator<=(std::int32_t rhs) const;
+	bool operator>(std::int32_t rhs) const;
+	bool operator>=(std::int32_t rhs) const;
 
 	operator float() const;
 	operator double() const;
@@ -57,6 +65,8 @@ private:
 
 extern FramePosition operator+(const FramePosition& a, const FramePosition& b);
 extern FramePosition operator-(const FramePosition& a, const FramePosition& b);
+extern FramePosition operator+(const FramePosition& a, std::int32_t b);
+extern FramePosition operator-(const FramePosition& a, std::int32_t b);
 
 // Vectorized frame position
 template <size_t ROWS>
