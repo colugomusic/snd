@@ -7,6 +7,7 @@ set(dir_miniaudio ${CMAKE_CURRENT_LIST_DIR}/submodules/miniaudio)
 set(dir_wavpack ${CMAKE_CURRENT_LIST_DIR}/submodules/wavpack)
 set(dir_utfcpp ${CMAKE_CURRENT_LIST_DIR}/submodules/utfcpp)
 
+set(WAVPACK_BUILD_COOLEDIT_PLUGIN OFF CACHE BOOL "Build CoolEdit plugin")
 add_subdirectory(${dir_wavpack} wavpack)
 
 list(APPEND PUBLIC_HEADERS
@@ -40,6 +41,7 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/threads/msg/audio_gui_comms.h
 	./include/snd/threads/msg/msg_channel.h
 	./include/snd/threads/msg/msg_comms.h
+	./include/snd/transport/frame_position.h
 )
 
 list(APPEND SRC
@@ -62,6 +64,7 @@ list(APPEND SRC
 	./src/storage/wavpack/wavpack_file_reader.cpp
 	./src/storage/wavpack/wavpack_memory_reader.h
 	./src/storage/wavpack/wavpack_memory_reader.cpp
+	./src/transport/frame_position.cpp
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
