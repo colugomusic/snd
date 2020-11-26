@@ -138,6 +138,8 @@ FramePosition& FramePosition::operator-=(std::int32_t rhs)
 
 FramePosition& FramePosition::operator+=(float rhs)
 {
+	if (rhs >= 1.0f) return operator+=(FramePosition(rhs));
+
 	fract_ += rhs;
 
 	if (fract_ >= 1.0f)
@@ -151,6 +153,8 @@ FramePosition& FramePosition::operator+=(float rhs)
 
 FramePosition& FramePosition::operator-=(float rhs)
 {
+	if (rhs >= 1.0f) return operator-=(FramePosition(rhs));
+
 	fract_ -= fract_;
 
 	if (fract_ < 0.0f)
