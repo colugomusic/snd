@@ -32,7 +32,7 @@ public:
 
 	AudioFileReader(const std::string& utf8_path, AudioFileFormat format_hint = AudioFileFormat::None);
 
-	// Read from memory. Currently only implemented for FLAC and WavPack (no technical reason, just laziness)
+	// Read from memory
 	AudioFileReader(const void* data, std::size_t data_size, AudioFileFormat format_hint = AudioFileFormat::None);
 
 	void read_header();
@@ -68,7 +68,9 @@ private:
 	FormatHandler make_flac_handler(const std::string& utf8_path);
 	FormatHandler make_flac_handler(const void* data, std::size_t data_size);
 	FormatHandler make_mp3_handler(const std::string& utf8_path);
+	FormatHandler make_mp3_handler(const void* data, std::size_t data_size);
 	FormatHandler make_wav_handler(const std::string& utf8_path);
+	FormatHandler make_wav_handler(const void* data, std::size_t data_size);
 	FormatHandler make_wavpack_handler(const std::string& utf8_path);
 	FormatHandler make_wavpack_handler(const void* data, std::size_t data_size);
 

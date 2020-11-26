@@ -206,6 +206,35 @@ auto AudioFileReader::make_mp3_handler(const std::string& utf8_path) -> FormatHa
 	return { AudioFileFormat::MP3, try_read_header, read_frames };
 }
 
+auto AudioFileReader::make_mp3_handler(const void* data, std::size_t data_size) -> FormatHandler
+{
+	const auto try_read_header = [this, data, data_size]() -> bool
+	{
+		drmp3 mp3;
+
+		if (!drmp3_init_memory(&mp3, data, data_size, nullptr)) return false;
+
+		format_ = read_header_info(&mp3);
+
+		drmp3_uninit(&mp3);
+
+		return true;
+	};
+
+	const auto read_frames = [this, data, data_size](Callbacks callbacks, std::uint32_t chunk_size)
+	{
+		drmp3 mp3;
+
+		if (!drmp3_init_memory(&mp3, data, data_size, nullptr)) throw std::runtime_error("Read error");
+
+		read_frame_data(&mp3, callbacks, format_, chunk_size);
+
+		drmp3_uninit(&mp3);
+	};
+
+	return { AudioFileFormat::MP3, try_read_header, read_frames };
+}
+
 auto AudioFileReader::make_wav_handler(const std::string& utf8_path) -> FormatHandler
 {
 	const auto try_read_header = [this, utf8_path]()
@@ -226,6 +255,35 @@ auto AudioFileReader::make_wav_handler(const std::string& utf8_path) -> FormatHa
 		drwav wav;
 
 		if (!dr_libs::wav::init_file(&wav, utf8_path)) throw std::runtime_error("Read error");
+
+		read_frame_data(&wav, callbacks, format_, chunk_size);
+
+		drwav_uninit(&wav);
+	};
+
+	return { AudioFileFormat::WAV, try_read_header, read_frames };
+}
+
+ auto AudioFileReader::make_wav_handler(const void* data, std::size_t data_size) -> FormatHandler
+{
+	const auto try_read_header = [this, data, data_size]()
+	{
+		drwav wav;
+
+		if (!drwav_init_memory(&wav, data, data_size, nullptr)) return false;
+
+		format_ = read_header_info(&wav);
+
+		drwav_uninit(&wav);
+
+		return true;
+	};
+
+	const auto read_frames = [this, data, data_size](Callbacks callbacks, std::uint32_t chunk_size)
+	{
+		drwav wav;
+
+		if (!drwav_init_memory(&wav, data, data_size, nullptr)) throw std::runtime_error("Read error");
 
 		read_frame_data(&wav, callbacks, format_, chunk_size);
 
