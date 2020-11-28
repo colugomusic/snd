@@ -1,6 +1,7 @@
 #include "wavpack_reader.h"
 #include <filesystem>
 #include <fstream>
+#include <vector>
 #include <wavpack.h>
 
 namespace snd {

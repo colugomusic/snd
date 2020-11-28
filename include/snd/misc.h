@@ -1,10 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
 #pragma warning(pop)
+
+#include "convert.h"
 
 namespace snd {
 
