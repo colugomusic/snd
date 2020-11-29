@@ -28,13 +28,13 @@ T soft_clip(T x, T threshold = 0.75)
 	return x;
 }
 
-template <int ROWS>
+template <size_t ROWS>
 ml::DSPVectorArray<ROWS> hard_clip(const ml::DSPVectorArray<ROWS>& in, float ceiling = 1.0f)
 {
 	return 0.5f * (ml::abs(in + ceiling) - ml::abs(in - ceiling));
 }
 
-template <int ROWS>
+template <size_t ROWS>
 ml::DSPVectorArray<ROWS> soft_clip(const ml::DSPVectorArray<ROWS>& in, float threshold = 0.75f)
 {
 	auto magic = (1.0f - (threshold / in)) * (1.0f - threshold) + threshold;

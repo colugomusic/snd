@@ -33,7 +33,7 @@ template <size_t SIZE>
 template <size_t CHANNEL, bool MAY_ALLOCATE>
 bool Comms<SIZE>::run(Channel::Task task)
 {
-	return channels_[CHANNEL].run<MAY_ALLOCATE>(task);
+	return channels_[CHANNEL].template run<MAY_ALLOCATE>(task);
 }
 
 template <size_t SIZE>

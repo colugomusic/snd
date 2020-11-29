@@ -85,6 +85,16 @@ template <class T> T distance_traveled(T start, T speed, T acceleration, T n)
 	return (speed * n) + (T(0.5) * acceleration) * (n * n) + start;
 }
 
+template <class T> T ratio(T min, T max, T distance)
+{
+    return std::pow(T(2), ((max - min) / distance) / T(12));
+}
+
+template <class T> T sum_of_geometric_series(T first, T ratio, T n)
+{
+    return first * ((T(1) - std::pow(ratio, n)) / (T(1) - ratio));
+}
+
 template <class T> T holy_grail(T min, T max, T distance, T n)
 {
 	auto r = ratio(min, max, distance);
@@ -100,16 +110,6 @@ template <class T> T holy_grail(T min, T max, T distance, T n)
 template <class T> T holy_grail_ff(T min, T max, T distance, T n)
 {
 	return convert::P2FF(min) * std::pow(ratio(min, max, distance), n);
-}
-
-template <class T> T sum_of_geometric_series(T first, T ratio, T n)
-{
-	return first * ((T(1) - std::pow(ratio, n)) / (T(1) - ratio));
-}
-
-template <class T> T ratio(T min, T max, T distance)
-{
-	return std::pow(T(2), ((max - min) / distance) / T(12));
 }
 
 template <class T>

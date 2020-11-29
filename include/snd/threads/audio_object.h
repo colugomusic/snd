@@ -210,7 +210,9 @@ public:
 	template <class ...Args>
 	void commit_new(Args... args)
 	{
-		object_->commit(make_new(args...));
+        auto new_object = make_new(args...);
+        
+		object_->commit(new_object);
 	}
 
 	T* get() { return object_->recent_; }
