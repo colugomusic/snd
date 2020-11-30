@@ -11,7 +11,7 @@ namespace snd {
 namespace audio {
 namespace filter {
 
-template <int ROWS>
+template <size_t ROWS>
 class Filter_2Pole_Allpass
 {
 public:
@@ -52,7 +52,7 @@ public:
 	static void calculate(int sr, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res, BQAP* bqap);
 };
 
-template <int ROWS>
+template <size_t ROWS>
 static ml::DSPVectorArray<ROWS> clip_freq(float sr, const ml::DSPVectorArray<ROWS>& freq)
 {
 	const auto min = sr / 24576.0f;
@@ -61,20 +61,20 @@ static ml::DSPVectorArray<ROWS> clip_freq(float sr, const ml::DSPVectorArray<ROW
 	return ml::clamp(freq, ml::DSPVectorArray<ROWS>(min), ml::DSPVectorArray<ROWS>(max));
 }
 
-template <int ROWS>
+template <size_t ROWS>
 static ml::DSPVectorArray<ROWS> omega(float sr, const ml::DSPVectorArray<ROWS>& freq)
 {
 	return freq * (6.28319f / sr);
 }
 
-template <int ROWS>
+template <size_t ROWS>
 Filter_2Pole_Allpass<ROWS>::Filter_2Pole_Allpass(const BQAP* data)
 	: data_(data ? data : &bqap_)
 {
 	clear();
 }
 
-template <int ROWS>
+template <size_t ROWS>
 bool Filter_2Pole_Allpass<ROWS>::needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
 {
 	if (SR != SR_)
@@ -87,7 +87,7 @@ bool Filter_2Pole_Allpass<ROWS>::needs_recalc(int SR, const ml::DSPVectorArray<R
 	return diff_freq_(freq) || diff_res_(res);
 }
 
-template <int ROWS>
+template <size_t ROWS>
 ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 {
 	ml::DSPVectorArray<ROWS> out;
@@ -123,7 +123,7 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVec
 	return out;
 }
 
-template <int ROWS>
+template <size_t ROWS>
 ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
 {
 	if (!data_ && needs_recalc(SR, freq, res)) calculate(SR, freq, res, &bqap_);
@@ -131,7 +131,7 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVec
 	return this->operator()(in);
 }
 
-template <int ROWS>
+template <size_t ROWS>
 void Filter_2Pole_Allpass<ROWS>::clear()
 {
 	for (int r = 0; r < ROWS; r++)
@@ -143,13 +143,13 @@ void Filter_2Pole_Allpass<ROWS>::clear()
 	}
 }
 
-template <int ROWS>
+template <size_t ROWS>
 void Filter_2Pole_Allpass<ROWS>::set_external_data(const BQAP* data)
 {
 	data_ = data;
 }
 
-template <int ROWS>
+template <size_t ROWS>
 void Filter_2Pole_Allpass<ROWS>::calculate(int sr, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res, BQAP* bqap)
 {
 	const auto o = omega(float(sr), clip_freq(float(sr), freq));

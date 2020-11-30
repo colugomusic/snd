@@ -15,7 +15,7 @@ T dB2AF(T db)
 	return std::pow(T(1.122018456459045), db);
 }
 
-template <int ROWS>
+template <size_t ROWS>
 ml::DSPVectorArray<ROWS> dB2AF(const ml::DSPVectorArray<ROWS>& db)
 {
 	return ml::pow(ml::DSPVectorArray<ROWS>(1.122018456459045f), db);
