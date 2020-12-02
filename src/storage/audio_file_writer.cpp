@@ -1,6 +1,7 @@
 #include "storage/audio_file_writer.h"
 #include <fstream>
 #include <stdexcept>
+#include <boost/filesystem.hpp>
 #include "dr_libs/dr_libs_utils.h"
 #include "miniaudio/snd_miniaudio.h"
 #include <wavpack.h>
@@ -274,7 +275,11 @@ auto AudioFileWriter::make_wavpack_handler(const std::string& utf8_path, const F
 
 		std::ofstream file;
 
+#ifdef _WIN32
 		file.open((const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), std::fstream::binary);
+#else
+        file.open(utf8_path, std::fstream::binary);
+#endif
 		
 		wavpack_write_file(blockout, &file, format, callbacks, chunk_size);
 	};

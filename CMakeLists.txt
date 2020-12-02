@@ -83,6 +83,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${dir_miniaudio}
 	${dir_wavpack}/include
 	${dir_utfcpp}/source
+    
+    # Temporary hack to get macOS working
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../extern/boost_1_74_0
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
