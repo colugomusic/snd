@@ -1,18 +1,23 @@
 [submodule "submodules/madronalib"]
 	path = submodules/madronalib
-	url = https://github.com/madronalabs/madronalib.git
+	url = https://github.com/colugomusic/madronalib.git
 [submodule "submodules/readerwriterqueue"]
 	path = submodules/readerwriterqueue
 	url = https://github.com/cameron314/readerwriterqueue
+	ignore = dirty
 [submodule "submodules/dr_libs"]
 	path = submodules/dr_libs
 	url = https://github.com/mackron/dr_libs.git
+	ignore = dirty
 [submodule "submodules/wavpack"]
 	path = submodules/wavpack
 	url = https://github.com/dbry/WavPack.git
+	ignore = dirty
 [submodule "submodules/utfcpp"]
 	path = submodules/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
+	ignore = dirty
 [submodule "submodules/miniaudio"]
 	path = submodules/miniaudio
 	url = https://github.com/mackron/miniaudio.git
+	ignore = dirty
