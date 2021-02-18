@@ -19,6 +19,7 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/mlext.h
 	./include/snd/types.h
 	./include/snd/audio/clipping.h
+	./include/snd/audio/level_meter.h
 	./include/snd/audio/filter/1-pole.h
 	./include/snd/audio/filter/2-pole.h
 	./include/snd/audio/filter/2-pole_allpass.h
