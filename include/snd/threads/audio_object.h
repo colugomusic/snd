@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "audio_object_manager.h"
 
 /*
@@ -108,6 +109,8 @@ public:
 
 	T* operator->() { return object_; }
 	T& operator*() { return *object_; }
+
+	T* get() { return object_; }
 };
 
 /*
@@ -246,6 +249,8 @@ class AudioObject
 
 	AudioObjectSetup<T> make_copy()
 	{
+		assert(recent_);
+
 		return AudioObjectSetup<T>(*recent_);
 	}
 
