@@ -7,6 +7,8 @@
 #include <DSP/MLDSPFilters.h>
 #pragma warning(pop)
 
+#include <snd/misc.h>
+
 namespace snd {
 namespace audio {
 
@@ -15,14 +17,15 @@ class LevelMeter
 {
 	std::array<ml::LinearGlide, ROWS> glide_;
 
-	std::array<float, ROWS> currentValue_;
-	std::array<float, ROWS> peak_;
+	std::array<std::atomic<float>, ROWS> current_value_;
+	std::array<std::atomic<float>, ROWS> peak_;
 
 public:
 
 	LevelMeter(int time = kFloatsPerDSPVector * 64);
 
-	const std::array<float, ROWS>& operator()(const ml::DSPVectorArray<ROWS>& in);
+	void operator()(const ml::DSPVectorArray<ROWS>& in);
+	float operator[](std::size_t index) const;
 };
 
 template <size_t ROWS>
@@ -35,13 +38,14 @@ LevelMeter<ROWS>::LevelMeter(int time)
 }
 
 template <size_t ROWS>
-const std::array<float, ROWS>& LevelMeter<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
+void LevelMeter<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 {
 	for (int i = 0; i < ROWS; i++)
 	{
 		const auto low = std::abs(ml::min(in.constRow(i)));
 		const auto high = std::abs(ml::max(in.constRow(i)));
-		const auto peak = ml::max(low, high);
+
+		auto peak = ml::max(low, high);
 
 		if (peak > peak_[i])
 		{
@@ -50,11 +54,24 @@ const std::array<float, ROWS>& LevelMeter<ROWS>::operator()(const ml::DSPVectorA
 
 		const auto glide = glide_[i](peak);
 
-		currentValue_[i] = ml::max(glide);
-		peak_[i] = ml::max(glide);
-	}
+		auto current_value = ml::max(glide);
 
-	return currentValue_;
+		peak = ml::max(glide);
+
+		if (current_value < 0.000001f) current_value = 0.0f;
+		if (peak < 0.000001f) peak = 0.0f;
+
+		current_value_[i] = current_value;
+		peak_[i] = peak;
+
+	}
 }
 
-}}
+template <size_t ROWS>
+float LevelMeter<ROWS>::operator[](std::size_t index) const
+{
+	return current_value_[index];
+}
+
+}
+}
