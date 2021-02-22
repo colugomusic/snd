@@ -55,9 +55,16 @@ T blt_prewarp_rat_0_08ct_sr_div_2(int SR, const T& freq)
 	return tan_rational(ml::min(T(1.50845f), (T(PI) / float(SR)) * freq));
 }
 
-template <class T> T lerp(T a, T b, T x)
+template <class T>
+constexpr T lerp(T a, T b, T x)
 {
 	return (x * (b - a)) + a;
+}
+
+template <class T>
+constexpr T inverse_lerp(T a, T b, T x)
+{
+	return (x - a) / (b - a);
 }
 
 template <class T> T quadratic_sequence(T step, T start, T n)
