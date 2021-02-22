@@ -1,7 +1,6 @@
 #include "storage/audio_file_writer.h"
 #include <fstream>
 #include <stdexcept>
-#include <boost/filesystem.hpp>
 #include "dr_libs/dr_libs_utils.h"
 #include "miniaudio/snd_miniaudio.h"
 #include <wavpack.h>
