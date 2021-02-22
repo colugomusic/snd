@@ -172,8 +172,15 @@ DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<RO
 	DSPVectorArrayFramePosition<ROWS> out;
 
 	out.pos = a.pos - ml::DSPVectorArrayInt<ROWS>(b);
+	out.fract = a.fract;
 
 	return out;
+}
+
+template <size_t ROWS>
+DSPVectorArrayFramePosition<ROWS> operator-(std::int32_t a, const DSPVectorArrayFramePosition<ROWS>& b)
+{
+	return DSPVectorArrayFramePosition<ROWS>(a) - b;
 }
 
 }}
