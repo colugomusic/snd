@@ -30,6 +30,8 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/audio/saturator/moron_saturator.h
 	./include/snd/clock/clock_divider.h
 	./include/snd/control/smoother.h
+	./include/snd/curve/curve.hpp
+	./include/snd/curve/schlick.hpp
 	./include/snd/storage/audio_file_format.h
 	./include/snd/storage/audio_file_reader.h
 	./include/snd/storage/audio_file_writer.h
