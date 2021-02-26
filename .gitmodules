@@ -21,3 +21,6 @@
 	path = submodules/miniaudio
 	url = https://github.com/mackron/miniaudio.git
 	ignore = dirty
+[submodule "submodules/linalg"]
+	path = submodules/linalg
+	url = https://github.com/sgorsten/linalg.git

@@ -1,16 +1,15 @@
 #pragma once
 
 #include <vector>
+#include "snd/convert.h"
 #include "snd/types.h"
+#include <linalg.h>
 
 namespace snd {
 namespace curve {
 
-// TODO: Change to use an angle threshold instead of just testing vertical
-//       difference (will simplify more effectively). Requires an interface
-//       change.
 template <class T>
-std::vector<XY<T>> simplify(const std::vector<XY<T>>& in, T threshold = T(0.5))
+std::vector<XY<T>> simplify(const std::vector<XY<T>>& in, float ratio, T tolerance = T(1))
 {
 	if (in.size() < 3) return in;
 
@@ -24,11 +23,17 @@ std::vector<XY<T>> simplify(const std::vector<XY<T>>& in, T threshold = T(0.5))
 		auto p1 = in[i + 1];
 		auto p2 = in[i + 2];
 
-		auto midp = lerp(p0.y, p2.y, inverse_lerp(p0.x, p2.x, p1.x));
-
 		out.push_back(p0);
+		
+		auto beg = linalg::vec<float, 2>(p0.x * ratio, p0.y);
+		auto mid = linalg::vec<float, 2>(p1.x * ratio, p1.y);
+		auto end = linalg::vec<float, 2>(p2.x * ratio, p2.y);
 
-		if (std::abs(midp - p1.y) > threshold)
+		auto na = linalg::normalize(mid - beg);
+		auto nb = linalg::normalize(end - mid);
+		auto dp = linalg::dot(na, nb);
+
+		if (dp < linalg::cos(convert::deg2rad(tolerance)))
 		{
 			out.push_back(p1);
 		}
@@ -41,7 +46,7 @@ std::vector<XY<T>> simplify(const std::vector<XY<T>>& in, T threshold = T(0.5))
 
 	if (in.size() == out.size()) return out;
 
-	return simplify(out, threshold);
+	return simplify(out, ratio, tolerance);
 }
 
 }}

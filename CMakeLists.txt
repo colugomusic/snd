@@ -6,6 +6,7 @@ set(dir_dr_libs ${CMAKE_CURRENT_LIST_DIR}/submodules/dr_libs)
 set(dir_miniaudio ${CMAKE_CURRENT_LIST_DIR}/submodules/miniaudio)
 set(dir_wavpack ${CMAKE_CURRENT_LIST_DIR}/submodules/wavpack)
 set(dir_utfcpp ${CMAKE_CURRENT_LIST_DIR}/submodules/utfcpp)
+set(dir_linalg ${CMAKE_CURRENT_LIST_DIR}/submodules/linalg)
 
 set(WAVPACK_BUILD_COOLEDIT_PLUGIN OFF CACHE BOOL "Build CoolEdit plugin")
 add_subdirectory(${dir_wavpack} wavpack)
@@ -83,6 +84,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	./include
 	./include/snd
 	${dir_dr_libs}
+	${dir_linalg}
 	${dir_miniaudio}
 	${dir_wavpack}/include
 	${dir_utfcpp}/source

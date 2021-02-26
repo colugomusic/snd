@@ -10,6 +10,13 @@ using SampleRate = std::uint32_t;
 using BitDepth = std::uint16_t;
 
 template <class T>
+struct Range
+{
+	T begin;
+	T end;
+};
+
+template <class T>
 struct XY
 {
 	T x;

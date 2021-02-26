@@ -60,25 +60,25 @@ inline T calculate_threshold(T y)
 	return T(0.5) + (T(0.5) * (T(1.0) - y));
 }
 
-inline std::vector<XY<float>> generate(const Spec<float>& spec, const Rect<int>& rect)
+inline std::vector<XY<float>> generate(const Spec<float>& spec, const Range<float> range, std::size_t resolution)
 {
 	std::vector<XY<float>> out;
 
-	if (rect.size.x - rect.position.y - rect.position.x < 2)
+	if (resolution < 2)
 	{
-		out.push_back({ 0.0f, 0.0f });
+		out.push_back({ range.begin, value(range.end, spec) });
 
 		return out;
 	}
 
-	out.reserve(std::size_t(rect.size.x));
+	out.reserve(resolution);
 
-	for (int i = rect.position.x; i < rect.size.x - rect.position.y; i++)
+	for (float x = range.begin; x < range.end; x += 1.0f / resolution)
 	{
-		const auto x = float(i) / float((rect.size.x - 1));
-
-		out.push_back({ float(i) - rect.position.x, (1.0f - value(x, spec)) * rect.size.y });
+		out.push_back({ x, value(x, spec)});
 	}
+
+	out.push_back({ range.end, value(range.end, spec) });
 
 	return out;
 }

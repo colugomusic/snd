@@ -1,5 +1,5 @@
 #pragma once
-
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 #pragma warning(push, 0)
@@ -37,6 +37,12 @@ template <class T>
 T FF2P(T ff)
 {
 	return (std::log(ff) / std::log(T(2))) * T(12);
+}
+
+template <class T>
+constexpr float deg2rad(T y)
+{
+	return y * T(M_PI) / T(180.0);
 }
 
 }}
