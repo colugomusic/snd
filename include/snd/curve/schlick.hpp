@@ -16,6 +16,7 @@ static constexpr T EPSILON = T(0.00001);
 template <class T>
 struct Spec
 {
+	T amp;
 	T slope;
 	T threshold;
 };
@@ -25,11 +26,11 @@ inline T value(T x, const Spec<T>& spec)
 {
 	if (x < spec.threshold)
 	{
-		return (spec.threshold * x) / (x + spec.slope * (spec.threshold - x) + EPSILON<T>);
+		return ((spec.threshold * x) / (x + spec.slope * (spec.threshold - x) + EPSILON<T>)) * spec.amp;
 	}
 	else
 	{
-		return (((T(1) - spec.threshold) * (x - T(1))) / (T(1) - x - spec.slope * (spec.threshold - x) + EPSILON<T>)) + T(1);
+		return ((((T(1) - spec.threshold) * (x - T(1))) / (T(1) - x - spec.slope * (spec.threshold - x) + EPSILON<T>)) + T(1)) * spec.amp;
 	}
 }
 
@@ -38,11 +39,11 @@ inline T derivative(T x, const Spec<T>& spec)
 {
 	if (x < spec.threshold)
 	{
-		return (spec.slope * std::pow(spec.threshold, T(2))) / std::pow((spec.slope - T(1)) * x - (spec.slope * spec.threshold), T(2));
+		return (spec.amp * spec.slope * std::pow(spec.threshold, T(2))) / std::pow((spec.slope - T(1)) * x - (spec.slope * spec.threshold), T(2));
 	}
 	else
 	{
-		return (spec.slope * std::pow(spec.threshold - T(1), T(2))) / std::pow((spec.slope - T(1)) * x - (spec.slope * spec.threshold) + T(1), T(2));
+		return (spec.amp * spec.slope * std::pow(spec.threshold - T(1), T(2))) / std::pow((spec.slope - T(1)) * x - (spec.slope * spec.threshold) + T(1), T(2));
 	}
 }
 

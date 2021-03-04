@@ -12,8 +12,8 @@ enum class Mode
 {
 	Linear = 0,
 	InOut = 1,
-	Over = 2,
-	Under = 3,
+	Under = 2,
+	Over = 3,
 };
 
 template <class T>
