@@ -65,10 +65,9 @@ inline T value(T x, const Spec<T>& spec)
 	}
 }
 
-inline std::vector<XY<float>> generate(float amp, float tilt, Mode mode, const Range<float> range, std::size_t resolution)
+template <class T>
+inline Spec<T> make_spec(float amp, float tilt, Mode mode)
 {
-	std::vector<XY<float>> out;
-
 	Spec<float> spec;
 
 	tilt = snd::ease::quadratic::out_in(tilt);
@@ -76,6 +75,15 @@ inline std::vector<XY<float>> generate(float amp, float tilt, Mode mode, const R
 	spec.points[0] = std::min(1.0f, 2.0f * (1.0f - tilt)) * amp;
 	spec.points[1] = std::min(1.0f, 2.0f * tilt) * amp;
 	spec.mode = mode;
+
+	return spec;
+}
+
+inline std::vector<XY<float>> generate(float amp, float tilt, Mode mode, const Range<float> range, std::size_t resolution)
+{
+	std::vector<XY<float>> out;
+
+	const auto spec = make_spec<float>(amp, tilt, mode);
 
 	if (resolution < 2)
 	{
