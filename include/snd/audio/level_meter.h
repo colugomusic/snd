@@ -63,7 +63,6 @@ void LevelMeter<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 
 		current_value_[i] = current_value;
 		peak_[i] = peak;
-
 	}
 }
 
@@ -73,5 +72,4 @@ float LevelMeter<ROWS>::operator[](std::size_t index) const
 	return current_value_[index];
 }
 
-}
-}
+}}
