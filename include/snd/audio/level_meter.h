@@ -3,6 +3,7 @@
 #include <cmath>
 
 #pragma warning(push, 0)
+#include <DSP/MLDSPGens.h>
 #include <DSP/MLDSPOps.h>
 #include <DSP/MLDSPFilters.h>
 #pragma warning(pop)
