@@ -35,6 +35,11 @@ public:
 		{
 			init_ = true;
 
+			for (int r = 0; r < ROWS; r++)
+			{
+				val_[r] = in.constRow(r)[kFloatsPerDSPVector - 1];
+			}
+
 			return true;
 		}
 
@@ -50,8 +55,6 @@ public:
 
 					return true;
 				}
-
-				val_[r] = row[i];
 			}
 		}
 
