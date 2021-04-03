@@ -83,6 +83,21 @@ struct DSPVectorArrayFramePosition
 		fract = ml::fractionalPart(rhs);
 	}
 
+	std::array<std::array<double, kFloatsPerDSPVector>, ROWS> as_doubles() const
+	{
+		std::array<std::array<double, kFloatsPerDSPVector>, ROWS> out;
+
+		for (auto row = 0; row < ROWS; row++)
+		{
+			for (auto i = 0; i < kFloatsPerDSPVector; i++)
+			{
+				out[row][i] = FramePosition(pos.constRow(row)[i], fract.constRow(row)[i]);
+			}
+		}
+
+		return out;
+	}
+
 	FramePosition operator[](int index) const
 	{
 		return FramePosition(pos.getConstBufferInt()[index], fract.getConstBuffer()[index]);
