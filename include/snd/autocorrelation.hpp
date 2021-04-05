@@ -20,106 +20,106 @@ struct AnalysisCallbacks
 // if no wavecycle could be found then zero is written
 inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t depth, float* out)
 {
-    if (depth < 4) depth = 4;
+	if (depth < 4) depth = 4;
 
-    struct ZX
-    {
-        bool init = false;
-        bool up = false;
-        std::uint32_t latest = 0;
-    } zx;
-    
-    struct Crossing
-    {
-        std::uint32_t index;
-        std::int32_t distance;
-        bool up;
-    };
+	struct ZX
+	{
+		bool init = false;
+		bool up = false;
+		std::uint32_t latest = 0;
+	} zx;
 
-    std::deque<Crossing> crossings;
+	struct Crossing
+	{
+		std::uint32_t index;
+		std::int32_t distance;
+		bool up;
+	};
 
-    const auto find_best_crossing = [](const std::deque<Crossing>& crossings)
-    {
+	std::deque<Crossing> crossings;
+
+	const auto find_best_crossing = [](const std::deque<Crossing>& crossings)
+	{
 		constexpr auto AUTO_WIN = 1;
-		
-        auto best = crossings.front().index;
-        auto best_diff = 100;
-        int depth = 2;
 
-        for (;;)
-        {
-            if (depth * 2 > crossings.size())
-            {
+		auto best = crossings.front().index;
+		auto best_diff = 100;
+		int depth = 2;
+
+		for (;;)
+		{
+			if (depth * 2 > crossings.size())
+			{
 				return best;
-            }
+			}
 
-            auto a = crossings.begin();
-            auto b = crossings.begin() + depth;
+			auto a = crossings.begin();
+			auto b = crossings.begin() + depth;
 
-            auto total_diff = 0;
+			auto total_diff = 0;
 
-            for (int i = 0; i < depth; i++, a++, b++)
-            {
-                assert(a->up == b->up);
+			for (int i = 0; i < depth; i++, a++, b++)
+			{
+				assert(a->up == b->up);
 
-                total_diff += std::abs(a->distance - b->distance);
-            }
+				total_diff += std::abs(a->distance - b->distance);
+			}
 
 			if (total_diff <= AUTO_WIN)
 			{
 				return (crossings.begin() + depth)->index;
 			}
 
-            if (total_diff < best_diff)
-            {
-                best_diff = total_diff;
-                best = (crossings.begin() + depth)->index;
-            }
+			if (total_diff < best_diff)
+			{
+				best_diff = total_diff;
+				best = (crossings.begin() + depth)->index;
+			}
 
-            depth++;
-        }
-    };
+			depth++;
+		}
+	};
 
-    auto best_crossing = 0;
+	auto best_crossing = 0;
 	auto prev_size = 0.0f;
 
-    for (std::uint32_t i = 0; i < n; i++)
-    {
+	for (std::uint32_t i = 0; i < n; i++)
+	{
 		if (callbacks.should_abort()) return false;
 
 		const auto value = callbacks.get_frame(i);
 
-        bool crossed = false;
+		bool crossed = false;
 
-        if (value > 0.0f && (!zx.init || !zx.up))
-        {
-            zx.init = true;
-            zx.up = true;
-            crossed = true;
-        }
-        else if (value < 0.0f && (!zx.init || zx.up))
-        {
-            zx.init = true;
-            zx.up = false;
-            crossed = true;
-        }
-        
-        if (crossed)
-        {
-            Crossing crossing;
+		if (value > 0.0f && (!zx.init || !zx.up))
+		{
+			zx.init = true;
+			zx.up = true;
+			crossed = true;
+		}
+		else if (value < 0.0f && (!zx.init || zx.up))
+		{
+			zx.init = true;
+			zx.up = false;
+			crossed = true;
+		}
 
-            crossing.index = i;
-            crossing.distance = i - zx.latest;
-            crossing.up = zx.up;
+		if (crossed)
+		{
+			Crossing crossing;
 
-            crossings.push_front(crossing);
+			crossing.index = i;
+			crossing.distance = i - zx.latest;
+			crossing.up = zx.up;
 
-            if (crossings.size() > depth)
-            {
-                crossings.pop_back();
-            }
+			crossings.push_front(crossing);
 
-            best_crossing = find_best_crossing(crossings);
+			if (crossings.size() > depth)
+			{
+				crossings.pop_back();
+			}
+
+			best_crossing = find_best_crossing(crossings);
 
 			const auto size = float(i - best_crossing);
 			const auto distance = i - zx.latest;
@@ -134,11 +134,12 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 			callbacks.report_progress(float(i) / (n - 1));
 
 			prev_size = size;
-            zx.latest = i;
-        }
-    }
+			zx.latest = i;
+		}
+	}
 
 	return true;
 }
 
-}}
+}
+}
