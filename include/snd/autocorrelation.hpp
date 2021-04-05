@@ -46,13 +46,8 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 		auto best_diff = 100;
 		int depth = 2;
 
-		for (;;)
+		for (int depth = 2; depth * 2 <= crossings.size(); depth++)
 		{
-			if (depth * 2 > crossings.size())
-			{
-				return best;
-			}
-
 			auto a = crossings.begin();
 			auto b = crossings.begin() + depth;
 
@@ -75,9 +70,9 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 				best_diff = total_diff;
 				best = (crossings.begin() + depth)->index;
 			}
-
-			depth++;
 		}
+
+		return best;
 	};
 
 	auto best_crossing = 0;
