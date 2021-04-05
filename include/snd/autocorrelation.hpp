@@ -18,6 +18,8 @@ struct AnalysisCallbacks
 // specialized autocorrelation which only considers the distances between zero crossings in the analysis.
 // output is an array of estimated wavecycle sizes for each frame
 // if no wavecycle could be found then zero is written
+// returns false if aborted before the analysis could complete
+// allocates memory
 inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t depth, float* out)
 {
 	if (depth < 4) depth = 4;
@@ -40,10 +42,12 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 
 	const auto find_best_crossing = [](const std::deque<Crossing>& crossings)
 	{
+		// TODO: tune these
 		constexpr auto AUTO_WIN = 1;
+		constexpr auto MAX_DIFF = 100;
 
 		auto best = crossings.front().index;
-		auto best_diff = 100;
+		auto best_diff = MAX_DIFF;
 		int depth = 2;
 
 		for (int depth = 2; depth * 2 <= crossings.size(); depth++)
