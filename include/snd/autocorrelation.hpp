@@ -123,12 +123,17 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 			const auto size = float(i - best_crossing);
 			const auto distance = i - zx.latest;
 
-			for (std::uint32_t j = 0; j < distance; j++)
+			if (distance > 1)
 			{
-				const auto x = float(j) / (distance - 1);
+				for (std::uint32_t j = 1; j < distance; j++)
+				{
+					const auto x = float(j) / (distance - 1);
 
-				out[j + zx.latest] = lerp(prev_size, size, x);
+					out[j + zx.latest] = lerp(prev_size, size, x);
+				}
 			}
+
+			out[i] = size;
 
 			callbacks.report_progress(float(i) / (n - 1));
 
