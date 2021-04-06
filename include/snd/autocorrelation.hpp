@@ -5,19 +5,22 @@
 #include <functional>
 #include "misc.h"
 
+#pragma warning(push, 0)
+#include <DSP/MLDSPFilters.h>
+#pragma warning(pop)
+
 namespace snd {
 namespace autocorrelation {
 
 struct AnalysisCallbacks
 {
-	std::function<float(std::uint32_t index)> get_frame;
+	std::function<void(std::uint32_t index, std::uint32_t n, float* out)> get_frames;
 	std::function<bool()> should_abort;
 	std::function<void(float)> report_progress;
 };
 
 // specialized autocorrelation which only considers the distances between zero crossings in the analysis.
 // output is an array of estimated wavecycle sizes for each frame
-// if no wavecycle could be found then zero is written
 // returns false if aborted before the analysis could complete
 // allocates memory
 inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t depth, float* out)
@@ -50,19 +53,28 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 		auto best_diff = MAX_DIFF;
 		int depth = 2;
 
-		for (int depth = 2; depth * 2 <= crossings.size(); depth++)
+		for (int depth = 2; depth * 2 <= crossings.size(); depth += 2)
 		{
 			auto a = crossings.begin();
 			auto b = crossings.begin() + depth;
 
 			auto total_diff = 0;
+			auto terrible = false;
 
 			for (int i = 0; i < depth; i++, a++, b++)
 			{
 				assert(a->up == b->up);
 
 				total_diff += std::abs(a->distance - b->distance);
+
+				if (total_diff >= best_diff)
+				{
+					terrible = true;
+					break;
+				}
 			}
+
+			if (terrible) continue;
 
 			if (total_diff <= AUTO_WIN)
 			{
@@ -82,64 +94,90 @@ inline bool analyze(AnalysisCallbacks callbacks, std::uint32_t n, std::uint32_t 
 	auto best_crossing = 0;
 	auto prev_size = 0.0f;
 
-	for (std::uint32_t i = 0; i < n; i++)
+	ml::DSPVector chunk_frames;
+	ml::OnePole filter;
+	ml::DCBlocker dc_blocker;
+
+	filter.mCoeffs = ml::OnePole::coeffs(0.01f);
+	dc_blocker.mCoeffs = ml::DCBlocker::coeffs(0.045f);
+
+	auto index = 0;
+	auto frames_remaining = n;
+
+	while (frames_remaining > 0)
 	{
 		if (callbacks.should_abort()) return false;
 
-		const auto value = callbacks.get_frame(i);
+		auto num_chunk_frames = std::min(std::uint32_t(kFloatsPerDSPVector), frames_remaining);
 
-		bool crossed = false;
+		callbacks.get_frames(index, num_chunk_frames, chunk_frames.getBuffer());
 
-		if (value > 0.0f && (!zx.init || !zx.up))
+		const auto filtered_frames = filter(dc_blocker(chunk_frames));
+
+		for (std::uint32_t i = 0; i < num_chunk_frames; i++)
 		{
-			zx.init = true;
-			zx.up = true;
-			crossed = true;
-		}
-		else if (value < 0.0f && (!zx.init || zx.up))
-		{
-			zx.init = true;
-			zx.up = false;
-			crossed = true;
-		}
+			const auto value = filtered_frames[i];
 
-		if (crossed)
-		{
-			Crossing crossing;
+			bool crossed = false;
 
-			crossing.index = i;
-			crossing.distance = i - zx.latest;
-			crossing.up = zx.up;
-
-			crossings.push_front(crossing);
-
-			if (crossings.size() > depth)
+			if (value > 0.0f && (!zx.init || !zx.up))
 			{
-				crossings.pop_back();
+				zx.init = true;
+				zx.up = true;
+				crossed = true;
+			}
+			else if (value < 0.0f && (!zx.init || zx.up))
+			{
+				zx.init = true;
+				zx.up = false;
+				crossed = true;
 			}
 
-			best_crossing = find_best_crossing(crossings);
-
-			const auto size = float(i - best_crossing);
-			const auto distance = i - zx.latest;
-
-			if (distance > 1)
+			if (crossed)
 			{
-				for (std::uint32_t j = 1; j < distance; j++)
+				Crossing crossing;
+
+				crossing.index = (index + i);
+				crossing.distance = (index + i) - zx.latest;
+				crossing.up = zx.up;
+
+				crossings.push_front(crossing);
+
+				if (crossings.size() > depth)
 				{
-					const auto x = float(j) / (distance - 1);
-
-					out[j + zx.latest] = lerp(prev_size, size, x);
+					crossings.pop_back();
 				}
+
+				best_crossing = find_best_crossing(crossings);
+
+				const auto size =
+					best_crossing == (index + i)
+					? prev_size
+					: float((index + i) - best_crossing);
+
+				const auto distance = (index + i) - zx.latest;
+
+				if (distance > 1)
+				{
+					for (std::uint32_t j = 1; j < distance; j++)
+					{
+						const auto x = float(j) / (distance - 1);
+
+						out[j + zx.latest] = lerp(prev_size, size, x);
+					}
+				}
+
+				out[(index + i)] = size;
+
+				callbacks.report_progress(float((index + i)) / (n - 1));
+
+				prev_size = size;
+				zx.latest = (index + i);
 			}
-
-			out[i] = size;
-
-			callbacks.report_progress(float(i) / (n - 1));
-
-			prev_size = size;
-			zx.latest = i;
 		}
+
+		index += num_chunk_frames;
+		frames_remaining -= num_chunk_frames;
 	}
 
 	return true;
