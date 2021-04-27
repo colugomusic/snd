@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <snd/ease.h>
 #include <snd/misc.h>
 #include <snd/types.h>
