@@ -15,22 +15,16 @@ macro(GITHUB_FETCH url)
 	endif()
 
     if (NOT ${name}_DIR)
-        # FetchContent is really slow on Windows so I'm doing this dumb check
-        # no skip it if the source directory already exists. This will
-        # apparently be fixed in cmake v3.21.0 so I can remove this when it's
-        # released.
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/_deps/${name}-src)
-            FetchContent_GetProperties(${name})
+		FetchContent_GetProperties(${name})
 
-            if (NOT ${name}_POPULATED)
-                FetchContent_Declare(
-                    ${name}
-                    GIT_REPOSITORY https://github.com/${url}
-                )
-                FetchContent_Populate(${name})
-            endif()
-        endif()
-        set(${name}_DIR ${CMAKE_BINARY_DIR}/_deps/${name}-src)
+		if (NOT ${name}_POPULATED)
+			FetchContent_Declare(
+				${name}
+				GIT_REPOSITORY https://github.com/${url}
+			)
+			FetchContent_Populate(${name})
+		endif()
+		set(${name}_DIR ${${name}_SOURCE_DIR})
     endif()
 endmacro()
 
