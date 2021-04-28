@@ -1,43 +1,31 @@
 project(snd)
 
-include(FetchContent)
-set(FETCHCONTENT_QUIET off)
+include(CPM.cmake)
 
-macro(GITHUB_FETCH url)
-	get_filename_component(name ${url} NAME_WE)
+# Header-only libraries #########################################
+CPMAddPackage("gh:cameron314/readerwriterqueue@1.0.4")
+CPMAddPackage("gh:mackron/dr_libs#master")
+CPMAddPackage("gh:mackron/miniaudio#master")
+CPMAddPackage("gh:madronalabs/madronalib#master")
+CPMAddPackage("gh:sgorsten/linalg#master")
+CPMAddPackage("gh:nemtrif/utfcpp#master")
 
-	set(SETME_MSG "You can optionally set this to your local ${url} root directory. Otherwise we will pull it from github.")
+list(APPEND include_dirs
+    ${dr_libs_SOURCE_DIR}
+    ${miniaudio_SOURCE_DIR}
+    ${madronalib_SOURCE_DIR}/source
+    ${linalg_SOURCE_DIR}
+    ${readerwriterqueue_SOURCE_DIR}
+    ${utfcpp_SOURCE_DIR}/source
+)
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-	if (NOT ${name}_ROOT)
-		set(${name}_ROOT ${SETME_MSG} CACHE PATH "${url} root directory")
-    elseif(NOT ${name}_ROOT STREQUAL ${SETME_MSG})
-        set(${name}_DIR ${${name}_ROOT})
-	endif()
-
-    if (NOT ${name}_DIR)
-		FetchContent_GetProperties(${name})
-
-		if (NOT ${name}_POPULATED)
-			FetchContent_Declare(
-				${name}
-				GIT_REPOSITORY https://github.com/${url}
-			)
-			FetchContent_Populate(${name})
-		endif()
-		set(${name}_DIR ${${name}_SOURCE_DIR})
-    endif()
-endmacro()
-
-GITHUB_FETCH(colugomusic/wavpack)
-GITHUB_FETCH(madronalabs/madronalib)
-GITHUB_FETCH(cameron314/readerwriterqueue)
-GITHUB_FETCH(mackron/dr_libs)
-GITHUB_FETCH(mackron/miniaudio)
-GITHUB_FETCH(nemtrif/utfcpp)
-GITHUB_FETCH(sgorsten/linalg)
-
+# WavPack #######################################################
 set(WAVPACK_BUILD_COOLEDIT_PLUGIN OFF CACHE BOOL "Build CoolEdit plugin")
-add_subdirectory(${wavpack_DIR} wavpack)
+CPMAddPackage("gh:colugomusic/wavpack#master")
+list(APPEND include_dirs ${wavpack_SOURCE_DIR}/include)
+list(APPEND link_libs wavpack)
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
@@ -111,18 +99,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_include_directories(${PROJECT_NAME} PRIVATE
 	./include
 	./include/snd
-	${dr_libs_DIR}
-	${linalg_DIR}
-	${miniaudio_DIR}
-	${wavpack_DIR}/include
-	${utfcpp_DIR}/source
+	${include_dirs}
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC
-	${madronalib_DIR}/source
-	${readerwriterqueue_DIR}
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    wavpack
-)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${link_libs})
