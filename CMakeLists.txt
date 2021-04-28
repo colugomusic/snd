@@ -6,7 +6,7 @@ set(FETCHCONTENT_QUIET off)
 macro(GITHUB_FETCH url)
 	get_filename_component(name ${url} NAME_WE)
 
-	set(SETME_MSG "You can optionally set this to your local ${url} root directory. otherwise we will pull it from github")
+	set(SETME_MSG "You can optionally set this to your local ${url} root directory. Otherwise we will pull it from github.")
 
 	if (NOT ${name}_ROOT)
 		set(${name}_ROOT ${SETME_MSG} CACHE PATH "${url} root directory")
@@ -14,19 +14,24 @@ macro(GITHUB_FETCH url)
         set(${name}_DIR ${${name}_ROOT})
 	endif()
 
-	if (NOT ${name}_DIR)
-		FetchContent_GetProperties(${name})
+    if (NOT ${name}_DIR)
+        # FetchContent is really slow on Windows so I'm doing this dumb check
+        # no skip it if the source directory already exists. This will
+        # apparently be fixed in cmake v3.21.0 so I can remove this when it's
+        # released.
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/_deps/${name}-src)
+            FetchContent_GetProperties(${name})
 
-        if (NOT ${name}_POPULATED)
-            FetchContent_Declare(
-                ${name}
-                GIT_REPOSITORY https://github.com/${url}
-            )
-            FetchContent_Populate(${name})
+            if (NOT ${name}_POPULATED)
+                FetchContent_Declare(
+                    ${name}
+                    GIT_REPOSITORY https://github.com/${url}
+                )
+                FetchContent_Populate(${name})
+            endif()
         endif()
-
-        set(${name}_DIR ${${name}_SOURCE_DIR})
-	endif()
+        set(${name}_DIR ${CMAKE_BINARY_DIR}/_deps/${name}-src)
+    endif()
 endmacro()
 
 GITHUB_FETCH(colugomusic/wavpack)
