@@ -1,15 +1,44 @@
 project(snd)
 
-set(dir_madronalib ${CMAKE_CURRENT_LIST_DIR}/submodules/madronalib)
-set(dir_readerwriterqueue ${CMAKE_CURRENT_LIST_DIR}/submodules/readerwriterqueue)
-set(dir_dr_libs ${CMAKE_CURRENT_LIST_DIR}/submodules/dr_libs)
-set(dir_miniaudio ${CMAKE_CURRENT_LIST_DIR}/submodules/miniaudio)
-set(dir_wavpack ${CMAKE_CURRENT_LIST_DIR}/submodules/wavpack)
-set(dir_utfcpp ${CMAKE_CURRENT_LIST_DIR}/submodules/utfcpp)
-set(dir_linalg ${CMAKE_CURRENT_LIST_DIR}/submodules/linalg)
+include(FetchContent)
+set(FETCHCONTENT_QUIET off)
+
+macro(GITHUB_FETCH url)
+	get_filename_component(name ${url} NAME_WE)
+
+	set(SETME_MSG "You can optionally set this to your local ${url} root directory. otherwise we will pull it from github")
+
+	if (NOT ${name}_ROOT)
+		set(${name}_ROOT ${SETME_MSG} CACHE PATH "${url} root directory")
+    elseif(NOT ${name}_ROOT STREQUAL ${SETME_MSG})
+        set(${name}_DIR ${${name}_ROOT})
+	endif()
+
+	if (NOT ${name}_DIR)
+		FetchContent_GetProperties(${name})
+
+        if (NOT ${name}_POPULATED)
+            FetchContent_Declare(
+                ${name}
+                GIT_REPOSITORY https://github.com/${url}
+            )
+            FetchContent_Populate(${name})
+        endif()
+
+        set(${name}_DIR ${${name}_SOURCE_DIR})
+	endif()
+endmacro()
+
+GITHUB_FETCH(colugomusic/wavpack)
+GITHUB_FETCH(madronalabs/madronalib)
+GITHUB_FETCH(cameron314/readerwriterqueue)
+GITHUB_FETCH(mackron/dr_libs)
+GITHUB_FETCH(mackron/miniaudio)
+GITHUB_FETCH(nemtrif/utfcpp)
+GITHUB_FETCH(sgorsten/linalg)
 
 set(WAVPACK_BUILD_COOLEDIT_PLUGIN OFF CACHE BOOL "Build CoolEdit plugin")
-add_subdirectory(${dir_wavpack} wavpack)
+add_subdirectory(${wavpack_DIR} wavpack)
 
 list(APPEND PUBLIC_HEADERS
 	./include/snd/convert.h
@@ -83,19 +112,19 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_include_directories(${PROJECT_NAME} PRIVATE
 	./include
 	./include/snd
-	${dir_dr_libs}
-	${dir_linalg}
-	${dir_miniaudio}
-	${dir_wavpack}/include
-	${dir_utfcpp}/source
+	${dr_libs_DIR}
+	${linalg_DIR}
+	${miniaudio_DIR}
+	${wavpack_DIR}/include
+	${utfcpp_DIR}/source
     
     # Temporary hack to get macOS working
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../extern/boost_1_74_0
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-	${dir_madronalib}/source
-	${dir_readerwriterqueue}
+	${madronalib_DIR}/source
+	${readerwriterqueue_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
