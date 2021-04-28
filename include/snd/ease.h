@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 namespace snd {
 namespace ease {
 namespace quadratic {
