@@ -48,7 +48,7 @@ bool init_file_write(drwav* wav, const std::string& utf8_path, const drwav_data_
 #ifdef _WIN32
 	return drwav_init_file_write_w(wav, (const wchar_t*)(utf8::utf8to16(utf8_path).c_str()), format, nullptr);
 #else
-	return drwav_init_file(wav, utf8_path.c_str(), nullptr);
+	return drwav_init_file_write(wav, utf8_path.c_str(), format, nullptr);
 #endif
 }
 
