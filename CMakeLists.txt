@@ -4,28 +4,14 @@ include(CPM.cmake)
 
 # Header-only libraries #########################################
 CPMAddPackage("gh:cameron314/readerwriterqueue@1.0.4")
-CPMAddPackage("gh:mackron/dr_libs#master")
-CPMAddPackage("gh:mackron/miniaudio#master")
 CPMAddPackage("gh:madronalabs/madronalib#master")
 CPMAddPackage("gh:sgorsten/linalg#master")
-CPMAddPackage("gh:nemtrif/utfcpp#master")
 
 list(APPEND include_dirs
-    ${dr_libs_SOURCE_DIR}
-    ${miniaudio_SOURCE_DIR}
     ${madronalib_SOURCE_DIR}/source
     ${linalg_SOURCE_DIR}
     ${readerwriterqueue_SOURCE_DIR}
-    ${utfcpp_SOURCE_DIR}/source
 )
-#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# WavPack #######################################################
-set(WAVPACK_BUILD_COOLEDIT_PLUGIN OFF CACHE BOOL "Build CoolEdit plugin" FORCE)
-set(WAVPACK_BUILD_PROGRAMS OFF CACHE BOOL "Build programs" FORCE)
-CPMAddPackage("gh:colugomusic/wavpack#master")
-list(APPEND include_dirs ${wavpack_SOURCE_DIR}/include)
-list(APPEND link_libs wavpack)
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 list(APPEND PUBLIC_HEADERS
@@ -50,9 +36,6 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/control/smoother.h
 	./include/snd/curve/curve.hpp
 	./include/snd/curve/schlick.hpp
-	./include/snd/storage/audio_file_format.h
-	./include/snd/storage/audio_file_reader.h
-	./include/snd/storage/audio_file_writer.h
 	./include/snd/storage/circular_buffer.h
 	./include/snd/storage/frame_data.h
 	./include/snd/storage/interleaving.h
@@ -72,19 +55,6 @@ list(APPEND SRC
 	./src/control/smoother.cpp
 	./src/threads/msg/audio_gui_comms.cpp
 	./src/threads/msg/msg_channel.cpp
-	./src/storage/audio_file_reader.cpp
-	./src/storage/audio_file_writer.cpp
-	./src/storage/dr_libs/dr_libs_impl.cpp
-	./src/storage/dr_libs/dr_libs_utils.h
-	./src/storage/dr_libs/dr_libs_utils.cpp
-	./src/storage/miniaudio/snd_miniaudio.h
-	./src/storage/miniaudio/snd_miniaudio.cpp
-	./src/storage/wavpack/wavpack_reader.h
-	./src/storage/wavpack/wavpack_reader.cpp
-	./src/storage/wavpack/wavpack_file_reader.h
-	./src/storage/wavpack/wavpack_file_reader.cpp
-	./src/storage/wavpack/wavpack_memory_reader.h
-	./src/storage/wavpack/wavpack_memory_reader.cpp
 	./src/transport/frame_position.cpp
 )
 
