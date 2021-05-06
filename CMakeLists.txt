@@ -72,5 +72,3 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	./include/snd
 	${include_dirs}
 )
-
-target_link_libraries(${PROJECT_NAME} PRIVATE ${link_libs})
