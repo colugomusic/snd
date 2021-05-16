@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include "audio_object_manager.h"
+#include "audio_object_manager.hpp"
 
 /*
 * Lock-free synchronization tools.

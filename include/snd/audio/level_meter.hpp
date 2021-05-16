@@ -8,7 +8,7 @@
 #include <DSP/MLDSPFilters.h>
 #pragma warning(pop)
 
-#include <snd/misc.h>
+#include <snd/misc.hpp>
 
 namespace snd {
 namespace audio {

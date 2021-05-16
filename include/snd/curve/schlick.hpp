@@ -2,9 +2,9 @@
 
 #include <cmath>
 #include <vector>
-#include "snd/misc.h"
-#include "snd/types.h"
-#include "snd/ease.h"
+#include "snd/misc.hpp"
+#include "snd/types.hpp"
+#include "snd/ease.hpp"
 
 namespace snd {
 namespace curve {

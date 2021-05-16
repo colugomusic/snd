@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "snd/convert.h"
-#include "snd/types.h"
+#include "snd/convert.hpp"
+#include "snd/types.hpp"
 #include <linalg.h>
 
 namespace snd {

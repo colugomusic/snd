@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "msg_channel.h"
+#include "msg_channel.hpp"
 
 namespace snd {
 namespace threads {

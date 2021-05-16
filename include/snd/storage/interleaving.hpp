@@ -1,7 +1,7 @@
 #pragma once
 
-#include <snd/types.h>
-#include "frame_data.h"
+#include <snd/types.hpp>
+#include "frame_data.hpp"
 
 namespace snd {
 namespace storage {

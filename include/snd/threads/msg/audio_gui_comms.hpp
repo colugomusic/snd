@@ -1,6 +1,6 @@
 #pragma once
 
-#include "msg_comms.h"
+#include "msg_comms.hpp"
 
 namespace snd {
 namespace threads {

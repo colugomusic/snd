@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <vector>
-#include <snd/types.h>
+#include <snd/types.hpp>
 
 namespace snd {
 namespace storage {

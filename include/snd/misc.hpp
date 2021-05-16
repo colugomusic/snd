@@ -7,7 +7,7 @@
 #include <DSP/MLDSPOps.h>
 #pragma warning(pop)
 
-#include "convert.h"
+#include "convert.hpp"
 
 namespace snd {
 

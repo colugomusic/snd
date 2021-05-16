@@ -1,6 +1,6 @@
 #pragma once
 
-#include "garbage_disposal.h"
+#include "garbage_disposal.hpp"
 
 namespace snd {
 namespace threads {
