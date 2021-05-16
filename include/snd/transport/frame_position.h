@@ -199,7 +199,7 @@ DSPVectorArrayFramePosition<ROWS> operator-(std::int32_t a, const DSPVectorArray
 	return DSPVectorArrayFramePosition<ROWS>(a) - b;
 }
 
-bool FramePosition::operator<(const FramePosition& rhs) const
+inline bool FramePosition::operator<(const FramePosition& rhs) const
 {
 	if (pos_ < rhs.pos_) return true;
 	if (pos_ == rhs.pos_) return fract_ < rhs.fract_;
@@ -207,7 +207,7 @@ bool FramePosition::operator<(const FramePosition& rhs) const
 	return false;
 }
 
-bool FramePosition::operator<=(const FramePosition& rhs) const
+inline bool FramePosition::operator<=(const FramePosition& rhs) const
 {
 	if (pos_ < rhs.pos_) return true;
 	if (pos_ == rhs.pos_) return fract_ <= rhs.fract_;
@@ -215,7 +215,7 @@ bool FramePosition::operator<=(const FramePosition& rhs) const
 	return false;
 }
 
-bool FramePosition::operator>(const FramePosition& rhs) const
+inline bool FramePosition::operator>(const FramePosition& rhs) const
 {
 	if (pos_ > rhs.pos_) return true;
 	if (pos_ == rhs.pos_) return fract_ > rhs.fract_;
@@ -223,7 +223,7 @@ bool FramePosition::operator>(const FramePosition& rhs) const
 	return false;
 }
 
-bool FramePosition::operator>=(const FramePosition& rhs) const
+inline bool FramePosition::operator>=(const FramePosition& rhs) const
 {
 	if (pos_ > rhs.pos_) return true;
 	if (pos_ == rhs.pos_) return fract_ >= rhs.fract_;
@@ -231,12 +231,12 @@ bool FramePosition::operator>=(const FramePosition& rhs) const
 	return false;
 }
 
-bool FramePosition::operator<(std::int32_t rhs) const
+inline bool FramePosition::operator<(std::int32_t rhs) const
 {
 	return pos_ < rhs;
 }
 
-bool FramePosition::operator<=(std::int32_t rhs) const
+inline bool FramePosition::operator<=(std::int32_t rhs) const
 {
 	if (pos_ < rhs) return true;
 	if (pos_ == rhs) return fract_ == 0.0f;
@@ -244,14 +244,15 @@ bool FramePosition::operator<=(std::int32_t rhs) const
 	return false;
 }
 
-bool FramePosition::operator>(std::int32_t rhs) const
+inline bool FramePosition::operator>(std::int32_t rhs) const
 {
 	if (pos_ > rhs) return true;
 	if (pos_ == rhs) return fract_ > 0.0f;
 
 	return false;
 }
-bool FramePosition::operator>=(std::int32_t rhs) const
+
+inline bool FramePosition::operator>=(std::int32_t rhs) const
 {
 	if (pos_ > rhs) return true;
 	if (pos_ == rhs) return fract_ >= 0.0f;
@@ -259,19 +260,19 @@ bool FramePosition::operator>=(std::int32_t rhs) const
 	return false;
 }
 
-FramePosition::FramePosition(std::int32_t pos)
+inline FramePosition::FramePosition(std::int32_t pos)
 	: pos_(pos)
 	, fract_(0.0f)
 {
 }
 
-FramePosition::FramePosition(std::int32_t pos, float fract)
+inline FramePosition::FramePosition(std::int32_t pos, float fract)
 	: pos_(pos)
 	, fract_(fract)
 {
 }
 
-FramePosition::FramePosition(float pos)
+inline FramePosition::FramePosition(float pos)
 {
 	float fractional_part;
 	float int_part;
@@ -282,7 +283,7 @@ FramePosition::FramePosition(float pos)
 	fract_ = fractional_part;
 }
 
-FramePosition& FramePosition::operator=(std::int32_t pos)
+inline FramePosition& FramePosition::operator=(std::int32_t pos)
 {
 	pos_ = pos;
 	fract_ = 0.0f;
@@ -290,7 +291,7 @@ FramePosition& FramePosition::operator=(std::int32_t pos)
 	return *this;
 }
 
-FramePosition& FramePosition::operator+=(const FramePosition& rhs)
+inline FramePosition& FramePosition::operator+=(const FramePosition& rhs)
 {
 	pos_ += rhs.pos_;
 	fract_ += rhs.fract_;
@@ -304,7 +305,7 @@ FramePosition& FramePosition::operator+=(const FramePosition& rhs)
 	return *this;
 }
 
-FramePosition& FramePosition::operator-=(const FramePosition& rhs)
+inline FramePosition& FramePosition::operator-=(const FramePosition& rhs)
 {
 	pos_ -= rhs.pos_;
 	fract_ -= rhs.fract_;
@@ -318,21 +319,21 @@ FramePosition& FramePosition::operator-=(const FramePosition& rhs)
 	return *this;
 }
 
-FramePosition& FramePosition::operator+=(std::int32_t rhs)
+inline FramePosition& FramePosition::operator+=(std::int32_t rhs)
 {
 	pos_ += rhs;
 
 	return *this;
 }
 
-FramePosition& FramePosition::operator-=(std::int32_t rhs)
+inline FramePosition& FramePosition::operator-=(std::int32_t rhs)
 {
 	pos_ -= rhs;
 
 	return *this;
 }
 
-FramePosition& FramePosition::operator+=(float rhs)
+inline FramePosition& FramePosition::operator+=(float rhs)
 {
 	if (rhs >= 1.0f) return operator+=(FramePosition(rhs));
 
@@ -347,7 +348,7 @@ FramePosition& FramePosition::operator+=(float rhs)
 	return *this;
 }
 
-FramePosition& FramePosition::operator-=(float rhs)
+inline FramePosition& FramePosition::operator-=(float rhs)
 {
 	if (rhs >= 1.0f) return operator-=(FramePosition(rhs));
 
@@ -362,22 +363,22 @@ FramePosition& FramePosition::operator-=(float rhs)
 	return *this;
 }
 
-FramePosition::operator float() const
+inline FramePosition::operator float() const
 {
 	return float(pos_) + fract_;
 }
 
-FramePosition::operator double() const
+inline FramePosition::operator double() const
 {
 	return double(pos_) + fract_;
 }
 
-FramePosition::operator std::int32_t() const
+inline FramePosition::operator std::int32_t() const
 {
 	return pos_;
 }
 
-FramePosition operator+(const FramePosition& a, const FramePosition& b)
+inline FramePosition operator+(const FramePosition& a, const FramePosition& b)
 {
 	FramePosition out(a);
 
@@ -386,7 +387,7 @@ FramePosition operator+(const FramePosition& a, const FramePosition& b)
 	return out;
 }
 
-FramePosition operator-(const FramePosition& a, const FramePosition& b)
+inline FramePosition operator-(const FramePosition& a, const FramePosition& b)
 {
 	FramePosition out(a);
 
@@ -395,7 +396,7 @@ FramePosition operator-(const FramePosition& a, const FramePosition& b)
 	return out;
 }
 
-FramePosition operator+(const FramePosition& a, std::int32_t b)
+inline FramePosition operator+(const FramePosition& a, std::int32_t b)
 {
 	FramePosition out(a);
 
@@ -404,7 +405,7 @@ FramePosition operator+(const FramePosition& a, std::int32_t b)
 	return out;
 }
 
-FramePosition operator-(const FramePosition& a, std::int32_t b)
+inline FramePosition operator-(const FramePosition& a, std::int32_t b)
 {
 	FramePosition out(a);
 

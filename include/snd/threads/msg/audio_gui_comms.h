@@ -40,4 +40,19 @@ bool AudioGuiComms::gui_run(Channel::Task task)
 	return run<CHANNEL_GUI, MAY_ALLOCATE>(task);
 }
 
+inline AudioGuiComms::AudioGuiComms(size_t audio_queue_size, size_t gui_queue_size)
+	: Comms(audio_queue_size, gui_queue_size)
+{
+}
+
+inline void AudioGuiComms::run_audio_tasks(int max)
+{
+	run_tasks<CHANNEL_AUDIO>(max);
+}
+
+inline void AudioGuiComms::run_gui_tasks(int max)
+{
+	run_tasks<CHANNEL_GUI>(max);
+}
+
 }}}

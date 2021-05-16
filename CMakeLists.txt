@@ -48,19 +48,9 @@ list(APPEND PUBLIC_HEADERS
 	./include/snd/transport/frame_position.h
 )
 
-list(APPEND SRC
-	./src/audio/filter/serial/2-pole.cpp
-	./src/audio/filter/serial/2-pole_mono.cpp
-	./src/clock/clock_divider.cpp
-	./src/control/smoother.cpp
-	./src/threads/msg/audio_gui_comms.cpp
-	./src/threads/msg/msg_channel.cpp
-)
-
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
-source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/src PREFIX src FILES ${SRC})
 
-add_library(${PROJECT_NAME} STATIC ${PUBLIC_HEADERS} ${SRC})
+add_library(${PROJECT_NAME} INTERFACE ${PUBLIC_HEADERS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
