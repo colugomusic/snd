@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -127,6 +128,11 @@ public:
 		data_.resize(size);
 	}
 
+	void fill(T value)
+	{
+		std::fill(data_.begin(), data_.end(), value);
+	}
+
 	typename Data::size_type size() const { return data_.size(); }
 
 	T& operator[](typename Data::size_type idx) { return data_[idx % data_.size()]; }
@@ -165,6 +171,14 @@ public:
 		for (auto& buffer : buffers_)
 		{
 			buffer.resize(size);
+		}
+	}
+
+	void fill(T value)
+	{
+		for (auto& buffer : buffers_)
+		{
+			buffer.fill(value);
 		}
 	}
 
