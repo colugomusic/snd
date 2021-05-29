@@ -50,4 +50,4 @@ list(APPEND PUBLIC_HEADERS
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/include/snd PREFIX public_headers FILES ${PUBLIC_HEADERS})
 
-add_library(${PROJECT_NAME} INTERFACE ${PUBLIC_HEADERS})
+add_library(${PROJECT_NAME} INTERFACE)
