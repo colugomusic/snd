@@ -94,11 +94,9 @@ inline std::vector<XY<float>> generate(float amp, float tilt, Mode mode, const R
 		return out;
 	}
 
-	out.reserve(resolution);
-
-	for (float x = range.begin; x < range.end; x += 1.0f / resolution)
+	for (double x = range.begin; x < range.end; x += 1.0 / resolution)
 	{
-		out.push_back({ x, value(x, spec) });
+		out.push_back({ float(x), value(float(x), spec) });
 	}
 
 	out.push_back({ range.end, value(range.end, spec) });
