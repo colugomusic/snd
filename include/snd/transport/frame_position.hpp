@@ -30,10 +30,13 @@ public:
 	FramePosition(std::int32_t pos);
 	FramePosition(std::int32_t pos, float fract);
 	FramePosition(float pos);
+	FramePosition(double pos);
 
 	FramePosition& operator=(FramePosition&& rhs) = default;
 	FramePosition& operator=(const FramePosition& rhs) = default;
 	FramePosition& operator=(std::int32_t pos);
+	FramePosition& operator=(float pos);
+	FramePosition& operator=(double pos);
 
 	FramePosition& operator+=(const FramePosition& rhs);
 	FramePosition& operator-=(const FramePosition& rhs);
@@ -41,6 +44,7 @@ public:
 	FramePosition& operator-=(std::int32_t rhs);
 	FramePosition& operator+=(float rhs);
 	FramePosition& operator-=(float rhs);
+	FramePosition& operator*=(float rhs);
 
 	bool operator<(const FramePosition& rhs) const;
 	bool operator<=(const FramePosition& rhs) const;
@@ -59,15 +63,26 @@ public:
 	float get_fract() const { return fract_; }
 
 private:
+	
+	template <class T>
+	static FramePosition encode(T pos)
+	{
+		FramePosition out;
+
+		T fractional_part;
+		T int_part;
+
+		fractional_part = std::modf(pos, &int_part);
+
+		out.pos_ = std::int32_t(int_part);
+		out.fract_ = float(fractional_part);
+
+		return out;
+	}
 
 	std::int32_t pos_ = 0;
 	float fract_ = 0.0f;
 };
-
-extern FramePosition operator+(const FramePosition& a, const FramePosition& b);
-extern FramePosition operator-(const FramePosition& a, const FramePosition& b);
-extern FramePosition operator+(const FramePosition& a, std::int32_t b);
-extern FramePosition operator-(const FramePosition& a, std::int32_t b);
 
 // Vectorized frame position
 template <size_t ROWS>
@@ -101,6 +116,11 @@ struct DSPVectorArrayFramePosition
 
 	FramePosition operator[](int index) const
 	{
+		return at(index);
+	}
+
+	FramePosition at(int index) const
+	{
 		return FramePosition(pos.getConstBufferInt()[index], fract.getConstBuffer()[index]);
 	}
 
@@ -129,6 +149,33 @@ struct DSPVectorArrayFramePosition
 		out.fract = fract;
 
 		return out;
+	}
+
+	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int32_t v)
+	{
+		pos = pos - ml::DSPVectorInt(v);
+
+		return *this;
+	}
+
+	DSPVectorArrayFramePosition<ROWS>& operator*=(float v)
+	{
+		for (int i = 0; i < kFloatsPerDSPVector; i++)
+		{
+			set(i, double(at(i)) * v);
+		}
+
+		return *this;
+	}
+
+	DSPVectorArrayFramePosition<ROWS>& operator/=(float v)
+	{
+		for (int i = 0; i < kFloatsPerDSPVector; i++)
+		{
+			set(i, double(at(i)) / v);
+		}
+
+		return *this;
 	}
 };
 
@@ -194,9 +241,45 @@ DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<RO
 }
 
 template <size_t ROWS>
+DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<ROWS>& a, float b)
+{
+	float fractional_part;
+	float int_part;
+
+	fractional_part = std::modf(b, &int_part);
+
+	DSPVectorArrayFramePosition<ROWS> b_vec;
+
+	b_vec.pos = int(int_part);
+	b_vec.fract = fractional_part;
+
+	return a - b_vec;
+}
+
+template <size_t ROWS>
 DSPVectorArrayFramePosition<ROWS> operator-(std::int32_t a, const DSPVectorArrayFramePosition<ROWS>& b)
 {
 	return DSPVectorArrayFramePosition<ROWS>(a) - b;
+}
+
+template <size_t ROWS>
+inline DSPVectorArrayFramePosition<ROWS> operator*(const DSPVectorArrayFramePosition<ROWS>& a, float b)
+{
+	DSPVectorArrayFramePosition<ROWS> out(a);
+
+	out *= b;
+
+	return out;
+}
+
+template <size_t ROWS>
+inline DSPVectorArrayFramePosition<ROWS> operator/(const DSPVectorArrayFramePosition<ROWS>& a, float b)
+{
+	DSPVectorArrayFramePosition<ROWS> out(a);
+
+	out /= b;
+
+	return out;
 }
 
 inline bool FramePosition::operator<(const FramePosition& rhs) const
@@ -273,14 +356,13 @@ inline FramePosition::FramePosition(std::int32_t pos, float fract)
 }
 
 inline FramePosition::FramePosition(float pos)
+	: FramePosition(encode(pos))
 {
-	float fractional_part;
-	float int_part;
+}
 
-	fractional_part = std::modf(pos, &int_part);
-
-	pos_ = std::int32_t(int_part);
-	fract_ = fractional_part;
+inline FramePosition::FramePosition(double pos)
+	: FramePosition(encode(pos))
+{
 }
 
 inline FramePosition& FramePosition::operator=(std::int32_t pos)
@@ -289,6 +371,16 @@ inline FramePosition& FramePosition::operator=(std::int32_t pos)
 	fract_ = 0.0f;
 
 	return *this;
+}
+
+inline FramePosition& FramePosition::operator=(float pos)
+{
+	return (*this = encode(pos));
+}
+
+inline FramePosition& FramePosition::operator=(double pos)
+{
+	return (*this = encode(pos));
 }
 
 inline FramePosition& FramePosition::operator+=(const FramePosition& rhs)
@@ -363,6 +455,11 @@ inline FramePosition& FramePosition::operator-=(float rhs)
 	return *this;
 }
 
+inline FramePosition& FramePosition::operator*=(float rhs)
+{
+	return (*this = double(*this) * rhs);
+}
+
 inline FramePosition::operator float() const
 {
 	return float(pos_) + fract_;
@@ -405,11 +502,29 @@ inline FramePosition operator+(const FramePosition& a, std::int32_t b)
 	return out;
 }
 
+inline FramePosition operator+(const FramePosition& a, float b)
+{
+	FramePosition out(a);
+
+	out += b;
+
+	return out;
+}
+
 inline FramePosition operator-(const FramePosition& a, std::int32_t b)
 {
 	FramePosition out(a);
 
 	out -= b;
+
+	return out;
+}
+
+inline FramePosition operator*(const FramePosition& a, float b)
+{
+	FramePosition out(a);
+
+	out *= b;
 
 	return out;
 }
