@@ -14,7 +14,7 @@ namespace transport {
 template <size_t ROWS>
 struct DSPVectorArrayFramePosition;
 
-// Represents a factional frame position with very high precision
+// Represents a fractional frame position with very high precision
 // Consists of pos (int32) and fract (float) parts
 class FramePosition
 {
