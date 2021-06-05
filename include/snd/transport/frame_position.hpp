@@ -352,7 +352,7 @@ inline FramePosition& FramePosition::operator-=(float rhs)
 {
 	if (rhs >= 1.0f) return operator-=(FramePosition(rhs));
 
-	fract_ -= fract_;
+	fract_ -= rhs;
 
 	if (fract_ < 0.0f)
 	{
