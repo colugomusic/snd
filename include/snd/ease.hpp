@@ -1,22 +1,27 @@
 #pragma once
 
+#ifndef _USE_MATH_DEFINES
+#	define _USE_MATH_DEFINES
+#endif
+
 #include <cmath>
+#include "third_party/const_math.hpp"
 
 namespace snd {
 namespace ease {
 namespace quadratic {
 
-template <class T> T in(T x)
+template <class T> constexpr T in(T x)
 {
 	return x * x;
 }
 
-template <class T> T out(T x)
+template <class T> constexpr T out(T x)
 {
 	return (x * (x - T(2))) * T(-1);
 }
 
-template <class T> T in_out(T x)
+template <class T> constexpr T in_out(T x)
 {
 	x /= T(0.5);
 
@@ -27,7 +32,7 @@ template <class T> T in_out(T x)
 	return (x * (x - T(2)) - T(1)) * T(-0.5);
 }
 
-template <class T> T out_in(T x)
+template <class T> constexpr T out_in(T x)
 {
 	if (x < T(0.5))
 	{
@@ -37,7 +42,7 @@ template <class T> T out_in(T x)
 	}
 	else
 	{
-		return (T(2) * std::pow(x - T(0.5), T(2))) + T(0.5);
+		return T(2 * const_math::pow(double(x) - 0.5, 2)) + T(0.5);
 	}
 }
 
@@ -45,7 +50,7 @@ template <class T> T out_in(T x)
 
 namespace parametric {
 
-template <class T> T in_out(T x)
+template <class T> constexpr T in_out(T x)
 {
 	auto sqr = x * x;
 
