@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <vector>
 #include <snd/types.hpp>
+#include <snd/misc.hpp>
 
 namespace snd {
 namespace storage {
@@ -40,6 +41,25 @@ public:
 
 	ChannelData<T, Allocator>& operator[](ChannelCount channel) { return data_[channel]; }
 	const ChannelData<T, Allocator>& operator[](ChannelCount channel) const { return data_[channel]; }
+
+	float read_frame(ChannelCount channel, FrameCount idx)
+	{
+		if (idx >= num_frames_) return 0.0f;
+
+		return data_[channel][idx];
+	}
+
+	float read_frame_interp(ChannelCount channel, float idx)
+	{
+		const auto idx_floor = std::uint64_t(std::floor(idx));
+		const auto idx_ceil = std::uint64_t(std::ceil(idx));
+		const auto idx_t = idx - idx_floor;
+
+		const auto value_floor = read_frame(channel, idx_floor);
+		const auto value_ceil = read_frame(channel, idx_ceil);
+		
+		return lerp(value_floor, value_ceil, idx_t);
+	}
 
 	typename Data::iterator begin() const { return data_.begin(); }
 	typename Data::iterator end() const { return data_.end(); }
