@@ -56,7 +56,7 @@ public:
 private:
 
 	std::function<F> function_;
-	std::atomic<bool> flag_;
+	std::atomic<bool> flag_ = false;
 };
 
 } // threads
