@@ -4,7 +4,14 @@ include(CPM.cmake)
 
 # Header-only libraries #########################################
 CPMAddPackage("gh:cameron314/readerwriterqueue@1.0.4")
-CPMAddPackage("gh:madronalabs/madronalib#master")
+
+CPMAddPackage(
+    NAME madronalib
+    GITHUB_REPOSITORY madronalabs/madronalib
+    GIT_TAG master
+    DOWNLOAD_ONLY YES
+)
+
 CPMAddPackage("gh:sgorsten/linalg#master")
 
 list(APPEND include_dirs
