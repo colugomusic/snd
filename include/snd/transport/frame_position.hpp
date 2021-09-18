@@ -77,6 +77,12 @@ private:
 
 		fractional_part = std::modf(pos, &int_part);
 
+		if (fractional_part < 0)
+		{
+			int_part -= 1;
+			fractional_part += 1;
+		}
+
 		out.pos_ = std::int32_t(int_part);
 		out.fract_ = float(fractional_part);
 
