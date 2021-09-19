@@ -1,6 +1,6 @@
 #pragma once
 
-#include "2-pole_allpass.h"
+#include "2-pole_allpass.hpp"
 
 namespace snd {
 namespace audio {

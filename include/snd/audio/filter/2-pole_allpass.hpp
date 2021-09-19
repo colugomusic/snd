@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../../diff_detector.h"
+#include "../../diff_detector.hpp"
+#include "../../misc.hpp"
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPFilters.h>
