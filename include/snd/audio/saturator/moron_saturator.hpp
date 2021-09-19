@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../../ease.h"
-#include "../../diff_detector.h"
+#include "../../ease.hpp"
+#include "../../diff_detector.hpp"
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
