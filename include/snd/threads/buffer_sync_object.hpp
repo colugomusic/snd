@@ -144,12 +144,14 @@ public:
 		}
 	}
 
-	T* audio(int idx) const
+	T* audio(int idx)
 	{
 		if (current_[idx]) return current_[idx];
 		if (current_[flip(idx)]) return current_[flip(idx)];
 
-		return nullptr;
+		update(idx);
+
+		return current_[idx];
 	}
 
 	T* recent() { return recent_; }
