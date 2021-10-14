@@ -9,7 +9,7 @@ namespace ml {
 class RampGen
 {
 public:
-	RampGen(int p) : mCounter(p), mPeriod(p) {}
+	RampGen(int p = kFloatsPerDSPVector) : mCounter(p), mPeriod(p) {}
 	~RampGen() {}
 
 	inline void setPeriod(int p) { mPeriod = p; }
