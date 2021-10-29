@@ -38,6 +38,8 @@ LevelMeter<ROWS>::LevelMeter(int time)
 	for (int i = 0; i < ROWS; i++)
 	{
 		glide_[i].setGlideTimeInSamples(float(time));
+		current_value_[i] = 0.0f;
+		peak_[i] = 0.0f;
 	}
 }
 
