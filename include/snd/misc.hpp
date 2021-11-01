@@ -163,4 +163,30 @@ inline int wrap(int x, int y)
 	return x;
 }
 
+template <size_t ROWS>
+bool clip_check(const ml::DSPVectorArray<ROWS>& x, float limit = 1.0f)
+{
+	for (int r = 0; r < ROWS; r++)
+	{
+		const auto min_value = ml::min(x.constRow(r));
+		const auto max_value = ml::max(x.constRow(r));
+
+		if (min_value < -limit) return true;
+		if (max_value > limit) return true;
+	}
+
+	return false;
+}
+
+template <class Iterator>
+bool clip_check(Iterator begin, Iterator end, float limit = 1.0f)
+{
+	for (auto pos = begin; pos != end; pos++)
+	{
+		if (*pos < -limit || *pos > limit) return true;
+	}
+
+	return false;
+}
+
 }
