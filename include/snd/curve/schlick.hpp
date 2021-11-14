@@ -19,9 +19,9 @@ static constexpr T EPSILON = T(0.00001);
 template <class T>
 struct Spec
 {
-	T amp;
-	T slope;
-	T threshold;
+	T amp { 1 };
+	T slope { 0.5 };
+	T threshold { 0.5 };
 };
 
 template <class T>
