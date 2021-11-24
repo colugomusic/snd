@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../misc.h"
-#include "../../diff_detector.h"
+#include <snd/misc.hpp>
+#include <snd/diff_detector.hpp>
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
@@ -63,8 +63,8 @@ void Filter_1Pole<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 		const auto& row_in = in.constRow(r);
 		const auto& g = g_.constRow(r);
 
-		auto& lp = g_.row(r);
-		auto& hp = g_.row(r);
+		auto& lp = lp_.row(r);
+		auto& hp = hp_.row(r);
 
 		for (int i = 0; i < kFloatsPerDSPVector; i++)
 		{
