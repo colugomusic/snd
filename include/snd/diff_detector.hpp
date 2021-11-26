@@ -29,6 +29,11 @@ class DiffDetector
 
 public:
 
+	void clear()
+	{
+		init_ = false;
+	}
+
 	bool operator()(const typename DSPVectorArrayType<T, ROWS>::Type& in)
 	{
 		if (!init_)
