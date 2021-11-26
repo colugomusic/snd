@@ -19,6 +19,7 @@ class Filter_1Pole
 	ml::DSPVectorArray<ROWS> lp_ = 0.0f;
 	ml::DSPVectorArray<ROWS> hp_ = 0.0f;
 	int SR_ = 0;
+	bool is_cleared_ { true };
 	DiffDetector<float, ROWS> diff_freq_;
 
 	bool needs_recalc(int SR, const ml::DSPVectorArray<ROWS>& freq);
@@ -34,6 +35,24 @@ public:
 	void operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq);
 
 	static ml::DSPVectorArray<ROWS> calculate_g(int sr, const ml::DSPVectorArray<ROWS>& freq);
+
+	void clear()
+	{
+		if (is_cleared_) return;
+
+		g_ = 0.0f;
+		lp_ = 0.0f;
+		hp_ = 0.0f;
+
+		for (int row = 0; row < ROWS; row++)
+		{
+			zdfbk_val_[row] = 0.0f;
+		}
+
+		diff_freq_.clear();
+
+		is_cleared_ = true;
+	}
 };
 
 template <int ROWS>
@@ -77,6 +96,8 @@ void Filter_1Pole<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in)
 			zdfbk_val_[r] = b + lp[i];
 		}
 	}
+
+	is_cleared_ = false;
 }
 
 template <int ROWS>
