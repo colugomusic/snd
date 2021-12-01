@@ -56,8 +56,6 @@ public:
 			delay_out.row(row) = delays_[row](delay_in.constRow(row), ml::clamp(time.constRow(row) - kFloatsPerDSPVector, {1.0f}, { size_ }));
 		} 
 
-		//delay_out = delay_(delay_in, time - kFloatsPerDSPVector);
-
 		feedback_ = insert_effect(delay_out);
 		is_empty_ = false;
 
@@ -67,8 +65,6 @@ public:
 private:
 
 	std::array<ml::PitchbendableDelay, ROWS> delays_;
-
-	//Delay<ROWS> delay_;
 
 	float size_;
 	ml::DSPVectorArray<ROWS> feedback_;
