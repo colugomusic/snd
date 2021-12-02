@@ -12,6 +12,11 @@ class EnvFollower
 {
 public:
 
+	EnvFollower()
+	{
+		reset();
+	}
+
     void set_SR(int SR)
     {
         if (SR == params_.SR) return;
@@ -41,9 +46,9 @@ public:
 			{
 				const auto x = in_row[i];
 
-				z_ = ((std::abs(x) - z_) * w_) + z_;
+				z_[r] = ((std::abs(x) - z_[r]) * w_) + z_[r];
 
-				out_row[i] = z_;
+				out_row[i] = z_[r];
 			}
 		}
 
@@ -58,7 +63,7 @@ public:
 	void reset()
 	{
 		w_ = 0.0f;
-		z_ = 0.0f;
+		z_.fill(0.0f);
 	}
 
 private:
@@ -75,13 +80,18 @@ private:
     } params_;
 
     float w_ = 0.0f;
-	float z_ = 0.0f;
+	std::array<float, ROWS> z_;
 };
 
 template <size_t ROWS>
 class EnvFollowerAR
 {
 public:
+
+	EnvFollowerAR()
+	{
+		reset();
+	}
 
     void set_SR(int SR)
     {
@@ -118,12 +128,12 @@ public:
 			for (int i = 0; i < kFloatsPerDSPVector; i++)
 			{
 				const auto x = in_row[i];
-				const auto y = std::abs(x) - z_;
+				const auto y = std::abs(x) - z_[r];
 				const auto w = y >= 0 ? wa_ : wr_;
 
-				z_ = (y * w) + z_;
+				z_[r] = (y * w) + z_[r];
 
-				out_row[i] = z_;
+				out_row[i] = z_[r];
 			}
 		}
 
@@ -134,7 +144,7 @@ public:
 	{
 		wa_ = 0.0f;
 		wr_ = 0.0f;
-		z_ = 0.0f;
+		z_.fill(0.0f);
 	}
 
 private:
@@ -154,7 +164,7 @@ private:
 
     float wa_ = 0.0f;
     float wr_ = 0.0f;
-	float z_ = 0.0f;
+	std::array<float, ROWS> z_;
 };
 } //
 } // snd
