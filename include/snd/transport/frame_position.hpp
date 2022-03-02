@@ -45,6 +45,8 @@ public:
 	FramePosition& operator-=(const FramePosition& rhs);
 	FramePosition& operator+=(std::int32_t rhs);
 	FramePosition& operator-=(std::int32_t rhs);
+	FramePosition& operator+=(std::int64_t rhs);
+	FramePosition& operator-=(std::int64_t rhs);
 	FramePosition& operator+=(float rhs);
 	FramePosition& operator-=(float rhs);
 	FramePosition& operator*=(float rhs);
@@ -163,6 +165,23 @@ struct DSPVectorArrayFramePosition
 	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int32_t v)
 	{
 		pos = pos - ml::DSPVectorInt(v);
+
+		return *this;
+	}
+
+	DSPVectorArrayFramePosition<ROWS> operator+(std::int64_t v) const
+	{
+		DSPVectorArrayFramePosition<ROWS> out;
+
+		out.pos = pos + ml::DSPVectorInt(static_cast<int32_t>(v));
+		out.fract = fract;
+
+		return out;
+	}
+
+	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int64_t v)
+	{
+		pos = pos - ml::DSPVectorInt(static_cast<int32_t>(v));
 
 		return *this;
 	}
