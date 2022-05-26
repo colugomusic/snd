@@ -1,2 +1,2 @@
 # snd
-dsp utils
+badly organized mess of audio related c++ utilities
