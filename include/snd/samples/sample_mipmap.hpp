@@ -264,7 +264,7 @@ inline auto SampleMipmap::read(uint16_t channel, float frame) const -> Frame
 
 inline auto SampleMipmap::read(uint16_t channel, uint64_t frame) const -> Frame
 {
-	assert(frame < lod0_.data[0].size());
+	frame = std::min(uint64_t(lod0_.data[0].size() - 1), frame);
 
 	return lod0_.data[channel][frame];
 }
