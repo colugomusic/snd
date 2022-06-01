@@ -32,6 +32,8 @@ public:
 	{
 		Frame min;
 		Frame max;
+
+		static auto lerp(LODFrame a, LODFrame b, float t) -> LODFrame;
 	};
 
 	struct Region
@@ -58,8 +60,11 @@ public:
 	auto lod_count() const { return lods_.size() + 1; }
 	auto bin_size_to_lod(float bin_size) const -> float;
 
-	// Interpolate between two LODs and two frames
-	auto read(float lod, uint16_t channel, float frame) const -> LODFrame;
+	// Interpolate between two LODs
+	// FrameIndex can be float or uint64_t
+	// if float, interpolate between the two frames
+	template <class FrameIndex>
+	auto read(float lod, uint16_t channel, FrameIndex frame) const -> LODFrame;
 
 	// Interpolate between two frames of the same LOD
 	auto read(uint16_t lod_index, uint16_t channel, float frame) const -> LODFrame;
@@ -126,6 +131,15 @@ private:
 
 namespace detail {
 
+template <class Result, class Value>
+static auto lerp(Value a, Value b, float t) -> Result
+{
+	const auto af{ static_cast<float>(a) };
+	const auto bf{ static_cast<float>(b) };
+
+	return static_cast<Result>((t * (bf - af)) + af);
+}
+
 template <class T>
 struct LerpHelper
 {
@@ -146,14 +160,19 @@ struct LerpHelper
 	template <class Result, class Value>
 	auto lerp(Value a, Value b) const -> Result
 	{
-		const auto af{ static_cast<float>(a) };
-		const auto bf{ static_cast<float>(b) };
-
-		return static_cast<Result>((t * (bf - af)) + af);
+		return detail::lerp<Result>(a, b, t);
 	}
 };
 
 } // detail
+
+inline auto SampleMipmap::LODFrame::lerp(LODFrame a, LODFrame b, float t) -> LODFrame
+{
+	const auto min{ detail::lerp<Frame>(a.min, b.min, t) };
+	const auto max{ detail::lerp<Frame>(a.max, b.max, t) };
+
+	return { min, max };
+}
 
 inline SampleMipmap::LOD::LOD(int index, uint16_t channel_count, uint64_t frame_count, uint8_t detail)
 	: index{ index }
@@ -182,7 +201,8 @@ inline SampleMipmap::SampleMipmap(uint16_t channel_count, uint64_t frame_count, 
 	}
 }
 
-inline auto SampleMipmap::read(float lod, uint16_t channel, float frame) const -> LODFrame
+template <class FrameIndex>
+inline auto SampleMipmap::read(float lod, uint16_t channel, FrameIndex frame) const -> LODFrame
 {
 	assert(channel < channel_count_);
 	assert(lod >= 0);
