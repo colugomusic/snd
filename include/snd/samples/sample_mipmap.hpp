@@ -60,11 +60,11 @@ public:
 	auto lod_count() const { return lods_.size() + 1; }
 	auto bin_size_to_lod(float bin_size) const -> float;
 
-	// Interpolate between two LODs
-	// FrameIndex can be float or uint64_t
-	// if float, interpolate between the two frames
-	template <class FrameIndex>
-	auto read(float lod, uint16_t channel, FrameIndex frame) const -> LODFrame;
+	// Interpolate between two LODs and two frames
+	auto read(float lod, uint16_t channel, float frame) const -> LODFrame;
+
+	// Interpolate between two LODs of a single frame
+	auto read(float lod, uint16_t channel, uint64_t frame) const -> LODFrame;
 
 	// Interpolate between two frames of the same LOD
 	auto read(uint16_t lod_index, uint16_t channel, float frame) const -> LODFrame;
@@ -99,12 +99,12 @@ private:
 		using Channel = std::vector<LODFrame>;
 		using Data = std::vector<Channel>;
 
-		const int index;
+		const uint16_t index;
 		const int bin_size;
 
 		Data data;
 
-		LOD(int index, uint16_t channel_count, uint64_t frame_count, uint8_t detail);
+		LOD(uint16_t index, uint16_t channel_count, uint64_t frame_count, uint8_t detail);
 	};
 
 	struct LOD0
@@ -174,7 +174,7 @@ inline auto SampleMipmap::LODFrame::lerp(LODFrame a, LODFrame b, float t) -> LOD
 	return { min, max };
 }
 
-inline SampleMipmap::LOD::LOD(int index, uint16_t channel_count, uint64_t frame_count, uint8_t detail)
+inline SampleMipmap::LOD::LOD(uint16_t index, uint16_t channel_count, uint64_t frame_count, uint8_t detail)
 	: index{ index }
 	, bin_size{ int(std::pow(detail, index)) }
 	, data{ static_cast<size_t>(channel_count), Channel(frame_count, LODFrame{ SILENT, SILENT }) }
@@ -190,7 +190,7 @@ inline SampleMipmap::SampleMipmap(uint16_t channel_count, uint64_t frame_count, 
 {
 	auto size{ frame_count / detail_ };
 
-	int index{ 1 };
+	uint16_t index{ 1 };
 
 	while (size > 0)
 	{
@@ -201,8 +201,7 @@ inline SampleMipmap::SampleMipmap(uint16_t channel_count, uint64_t frame_count, 
 	}
 }
 
-template <class FrameIndex>
-inline auto SampleMipmap::read(float lod, uint16_t channel, FrameIndex frame) const -> LODFrame
+inline auto SampleMipmap::read(float lod, uint16_t channel, float frame) const -> LODFrame
 {
 	assert(channel < channel_count_);
 	assert(lod >= 0);
@@ -212,6 +211,29 @@ inline auto SampleMipmap::read(float lod, uint16_t channel, FrameIndex frame) co
 
 	const auto a_value{ read(lerp_lod.index.a, channel, frame) };
 	const auto b_value{ read(lerp_lod.index.b, channel, frame) };
+
+	const auto min{ lerp_lod.lerp<Frame>(a_value.min, b_value.min) };
+	const auto max{ lerp_lod.lerp<Frame>(a_value.max, b_value.max) };
+
+	return { min, max };
+}
+
+inline auto SampleMipmap::read(float lod, uint16_t channel, uint64_t frame) const -> LODFrame
+{
+	assert(channel < channel_count_);
+	assert(lod >= 0);
+	assert(lod <= lods_.size());
+
+	const detail::LerpHelper<uint16_t> lerp_lod{ lod };
+
+	const auto& lod_a{ lods_[lerp_lod.index.a - 1] };
+	const auto& lod_b{ lods_[lerp_lod.index.b - 1] };
+
+	const auto lod_frame_a = frame / lod_a.bin_size;
+	const auto lod_frame_b = frame / lod_b.bin_size;
+
+	const auto a_value{ read(lod_a, channel, lod_frame_a) };
+	const auto b_value{ read(lod_b, channel, lod_frame_b) };
 
 	const auto min{ lerp_lod.lerp<Frame>(a_value.min, b_value.min) };
 	const auto max{ lerp_lod.lerp<Frame>(a_value.max, b_value.max) };
@@ -318,7 +340,7 @@ inline auto SampleMipmap::generate(LOD* lod, uint16_t channel, uint64_t frame) -
 
 	for (uint64_t i{ beg }; i < end; i++)
 	{
-		const auto frame{ read(lod->index - 1, channel, i) };
+		const auto frame{ read(uint16_t(lod->index - 1), channel, i) };
 
 		if (frame.min < min) min = frame.min;
 		if (frame.max > max) max = frame.max;
