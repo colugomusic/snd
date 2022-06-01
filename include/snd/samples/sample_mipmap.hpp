@@ -226,7 +226,7 @@ inline auto SampleMipmap::read(uint16_t lod_idx, uint16_t channel, float frame) 
 		return { value, value };
 	}
 
-	assert(lod_idx <= lods_.size());
+	lod_idx = std::min(lod_idx, static_cast<uint16_t>(lods_.size())); // Is this necessary??
 
 	const auto& lod{ lods_[lod_idx - 1] };
 
