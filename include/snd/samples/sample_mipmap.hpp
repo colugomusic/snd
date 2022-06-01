@@ -238,7 +238,7 @@ inline auto SampleMipmap::read(float lod, uint16_t channel, uint64_t frame) cons
 			return { value, value };
 		}
 
-		const auto& lod{ lods_[lod_index_a] };
+		const auto& lod{ lods_[lod_index] };
 		const auto lod_frame{ frame / lod.bin_size };
 
 		return read(lod, channel, lod_frame);
