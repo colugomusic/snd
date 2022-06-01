@@ -226,17 +226,29 @@ inline auto SampleMipmap::read(float lod, uint16_t channel, uint64_t frame) cons
 
 	const detail::LerpHelper<uint16_t> lerp_lod{ lod };
 
-	const auto& lod_a{ lods_[lerp_lod.index.a - 1] };
-	const auto& lod_b{ lods_[lerp_lod.index.b - 1] };
+	const auto lod_index_a{ std::max(0, lerp_lod.index.a - 1) };
+	const auto lod_index_b{ std::max(0, lerp_lod.index.b - 1) };
 
-	const auto lod_frame_a = frame / lod_a.bin_size;
-	const auto lod_frame_b = frame / lod_b.bin_size;
+	const auto read_lod_value = [=](uint16_t lod_index) -> LODFrame
+	{
+		if (lod_index == 0)
+		{
+			const auto value{ read(channel, frame) };
 
-	const auto a_value{ read(lod_a, channel, lod_frame_a) };
-	const auto b_value{ read(lod_b, channel, lod_frame_b) };
+			return { value, value };
+		}
 
-	const auto min{ lerp_lod.lerp<Frame>(a_value.min, b_value.min) };
-	const auto max{ lerp_lod.lerp<Frame>(a_value.max, b_value.max) };
+		const auto& lod{ lods_[lod_index_a] };
+		const auto lod_frame{ frame / lod.bin_size };
+
+		return read(lod, channel, lod_frame);
+	};
+
+	const auto value_a{ read_lod_value(lod_index_a) };
+	const auto value_b{ read_lod_value(lod_index_b) };
+
+	const auto min{ lerp_lod.lerp<Frame>(value_a.min, value_b.min) };
+	const auto max{ lerp_lod.lerp<Frame>(value_a.max, value_b.max) };
 
 	return { min, max };
 }
