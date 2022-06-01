@@ -36,8 +36,8 @@ public:
 
 	struct Region
 	{
-		uint64_t beg;
-		uint64_t end;
+		uint64_t beg{};
+		uint64_t end{};
 	};
 
 	// that 'detail' parameter:
