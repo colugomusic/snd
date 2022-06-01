@@ -331,9 +331,7 @@ inline auto SampleMipmap::update(Region region) -> void
 	for (auto& lod : lods_)
 	{
 		region.beg /= detail_;
-
-		// like (region.end / detail_) except it rounds up instead of down
-		region.end = (region.end + detail_ - 1) / detail_;
+		region.end /= detail_;
 
 		generate(&lod, region);
 	}
