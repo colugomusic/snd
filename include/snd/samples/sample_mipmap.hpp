@@ -202,7 +202,6 @@ inline auto SampleMipmap::read(float lod, uint16_t channel, float frame) const -
 {
 	assert(channel < channel_count_);
 	assert(lod >= 0);
-	assert(lod <= lods_.size());
 
 	const detail::LerpHelper<uint16_t> lerp_lod{ lod };
 
@@ -226,7 +225,7 @@ inline auto SampleMipmap::read(uint16_t lod_idx, uint16_t channel, float frame) 
 		return { value, value };
 	}
 
-	lod_idx = std::min(lod_idx, static_cast<uint16_t>(lods_.size())); // Is this necessary??
+	lod_idx = std::min(lod_idx, static_cast<uint16_t>(lods_.size()));
 
 	const auto& lod{ lods_[lod_idx - 1] };
 
