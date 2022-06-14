@@ -18,6 +18,7 @@ public:
 	class iterator
 	{
 	public:
+
 		using self_type = iterator;
 		using value_type = T;
 		using data_type = typename std::conditional_t<Const, const Data*, Data*>;
@@ -28,7 +29,7 @@ public:
 
 		iterator(data_type data, typename Data::size_type pos) : data_(data), pos_(difference_type(pos)) {}
 
-		self_type operator++()
+		auto operator++()
 		{
 			pos_++;
 
@@ -37,7 +38,7 @@ public:
 			return *this;
 		}
 
-		self_type operator++(int)
+		auto operator++(int)
 		{
 			self_type result(*this);
 			
@@ -46,7 +47,7 @@ public:
 			return result;
 		}
 
-		self_type operator--()
+		auto operator--()
 		{
 			pos_--;
 
@@ -55,7 +56,7 @@ public:
 			return *this;
 		}
 
-		self_type operator--(int)
+		auto operator--(int)
 		{
 			self_type result(*this);
 
@@ -64,12 +65,12 @@ public:
 			return result;
 		}
 
-		self_type operator+(difference_type n)
+		auto operator+(difference_type n)
 		{
 			return self_type(data_, (pos_ + n) % data_->size());
 		}
 
-		self_type operator-(difference_type n)
+		auto operator-(difference_type n)
 		{
 			const auto new_pos = (pos_ - n) % data_->size();
 
@@ -78,42 +79,42 @@ public:
 			return self_type(data_, new_pos);
 		}
 
-		reference operator*() const
+		auto operator*() const
 		{
 			return data_->at(pos_);
 		}
 
-		pointer operator->() const
+		auto operator->() const
 		{
 			return &(data_->at(pos_));
 		}
 
 		template<bool _Const = Const>
-		std::enable_if_t<!_Const, reference> operator*()
+		auto operator*() ->  std::enable_if_t<!_Const, reference>
 		{
 			return data_->at(pos_);
 		}
 
 		template<bool _Const = Const>
-		std::enable_if_t<!_Const, pointer> operator->()
+		auto operator->() -> std::enable_if_t<!_Const, pointer>
 		{
 			return &(data_->at(pos_));
 		}
 
-		bool operator==(const self_type& rhs)
+		auto operator==(const self_type& rhs)
 		{
 			return data_ == rhs.data_ && pos_ == rhs.pos_;
 		}
 
-		bool operator!=(const self_type& rhs)
+		auto operator!=(const self_type& rhs)
 		{
 			return data_ != rhs.data_ || pos_ != rhs.pos_;
 		}
 
 	private:
 
-		data_type data_ = nullptr;
-		difference_type pos_ = 0;
+		data_type data_{};
+		difference_type pos_{};
 	};
 
 	CircularBuffer() = default;
@@ -123,21 +124,19 @@ public:
 	{
 	}
 
-	void resize(typename Data::size_type size)
+	auto resize(typename Data::size_type size)
 	{
 		data_.resize(size);
 	}
 
-	void fill(T value)
+	auto fill(T value)
 	{
 		std::fill(data_.begin(), data_.end(), value);
 	}
 
-	typename Data::size_type size() const { return data_.size(); }
-
-	T& operator[](typename Data::size_type idx) { return data_[idx % data_.size()]; }
-
-	const T& at(typename Data::size_type idx) const { return data_.at(idx % data_.size()); }
+	auto size() const { return data_.size(); }
+	auto& operator[](typename Data::size_type idx) { return data_[idx % data_.size()]; }
+	auto& at(typename Data::size_type idx) const { return data_.at(idx % data_.size()); }
 
 	auto begin() { return iterator<false>(&data_, 0); }
 	auto end() { return iterator<false>(&data_, 0); }
@@ -166,7 +165,7 @@ public:
 		resize(size);
 	}
 	
-	void resize(typename CircularBuffer<T>::Data::size_type size)
+	auto resize(typename CircularBuffer<T>::Data::size_type size)
 	{
 		for (auto& buffer : buffers_)
 		{
@@ -174,7 +173,7 @@ public:
 		}
 	}
 
-	void fill(T value)
+	auto fill(T value)
 	{
 		for (auto& buffer : buffers_)
 		{
@@ -182,22 +181,19 @@ public:
 		}
 	}
 
-	typename Buffers::size_type size() const { return buffers_[0].size(); }
+	auto size() const
+	{
+		return buffers_[0].size();
+	}
 
-	CircularBuffer<T, Allocator>& operator[](typename Buffers::size_type idx)
+	auto& operator[](typename Buffers::size_type idx)
 	{
 		return buffers_[idx];
 	}
 
-	const CircularBuffer<T, Allocator>& operator[](typename Buffers::size_type idx) const
+	auto& operator[](typename Buffers::size_type idx) const
 	{
 		return buffers_.at(idx);
-	}
-
-	template <int Row, class InputIt>
-	bool write(InputIt first, InputIt last, typename CircularBuffer<T>::Data::size_type pos)
-	{
-		return buffers_[Row].write(first, last, pos);
 	}
 };
 
