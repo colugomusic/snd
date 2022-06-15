@@ -37,14 +37,32 @@ public:
 	auto is_ready() const -> bool;
 	auto resize(uint32_t required_size) -> bool;
 	auto read(channel_t channel, uint32_t frame) const -> float;
+	auto read_aligned(
+		channel_t channel, 
+		uint32_t frame_beg, 
+		uint32_t frames_to_read, 
+		uint32_t chunk_size, 
+		std::function<void(const float* data)> reader,
+		std::function<void()> chunk_not_ready) const -> void;
+
 	auto write(channel_t channel, uint32_t frame, float value) -> void;
 	auto write_aligned(channel_t channel, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void;
 
 	//
-	// The range specified by frame_beg/frames_to_write
+	// The range specified by frame_beg/frames_to_(read/write)
 	// must fall entirely within a single sub-buffer
 	//
-	auto write_sub_buffer(channel_t channel, uint32_t frame_beg, uint32_t frames_to_write, std::function<void(float* data)> writer) -> void;
+	auto read_sub_buffer(
+		channel_t channel, 
+		uint32_t frame_beg, 
+		uint32_t frames_to_read, 
+		std::function<void(const float* data)> reader) const -> bool;
+
+	auto write_sub_buffer(
+		channel_t channel, 
+		uint32_t frame_beg, 
+		uint32_t frames_to_write, 
+		std::function<void(float* data)> writer) -> bool;
 
 	auto read_mipmap(channel_t channel, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
 	auto write_audio_mipmap_data() -> void;
@@ -168,6 +186,31 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read(channel_t channel, uint32_t 
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
+	channel_t channel, 
+	uint32_t frame_beg, 
+	uint32_t frames_to_read, 
+	uint32_t chunk_size, 
+	std::function<void(const float* data)> reader,
+	std::function<void()> chunk_not_ready) const -> void
+{
+	auto frames_remaining{ frames_to_read };
+
+	while (frames_remaining > 0)
+	{
+		const auto chunk_frames_to_read{ std::min(frames_remaining, chunk_size) };
+
+		if (!read_sub_buffer(channel, frame_beg, chunk_frames_to_read, reader))
+		{
+			chunk_not_ready();
+		}
+
+		frame_beg += chunk_size;
+		frames_remaining -= chunk_frames_to_read;
+	}
+}
+
+template <size_t SUB_BUFFER_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(channel_t channel, uint32_t frame, float value) -> void
 {
 	auto buffer{ get_buffer(frame) };
@@ -180,17 +223,41 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(channel_t channel, uint32_t
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(channel_t channel, uint32_t frame_beg, uint32_t frames_to_write, std::function<void(float* data)> writer) -> void
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_sub_buffer(
+	channel_t channel, 
+	uint32_t frame_beg, 
+	uint32_t frames_to_read, 
+	std::function<void(const float* data)> reader) const -> bool
+{
+	assert((frame_beg / SUB_BUFFER_SIZE) == ((frame_beg + (frames_to_read - 1)) / SUB_BUFFER_SIZE));
+
+	auto buffer{ get_buffer(frame_beg) };
+
+	if (!buffer) return false;
+
+	buffer->ptr->read(channel, get_local_frame(frame_beg), frames_to_read, reader);
+
+	return true;
+}
+
+template <size_t SUB_BUFFER_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
+	channel_t channel, 
+	uint32_t frame_beg, 
+	uint32_t frames_to_write, 
+	std::function<void(float* data)> writer) -> bool
 {
 	assert((frame_beg / SUB_BUFFER_SIZE) == ((frame_beg + (frames_to_write - 1)) / SUB_BUFFER_SIZE));
 
 	auto buffer{ get_buffer(frame_beg) };
 
-	if (!buffer) return;
+	if (!buffer) return false;
 
-	buffer->ptr->write(channel, frame_beg, frames_to_write, writer);
+	buffer->ptr->write(channel, get_local_frame(frame_beg), frames_to_write, writer);
 	buffer->dirty = true;
 	buffer_dirt_flag_ = true;
+
+	return true;
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
