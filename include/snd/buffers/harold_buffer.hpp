@@ -237,7 +237,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::generate_mipmaps() -> bool
 
 	for (const auto& buffer : buffers_)
 	{
-		auto result{ buffer.ptr->process_mipmap<snd::th::GUI>() };
+		auto result{ buffer.ptr->process_mipmap_gui() };
 
 		if (result) mipmap_generated = true;
 	}
@@ -256,7 +256,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_audio_mipmap_data() -> void
 	{
 		if (buffer.dirty)
 		{
-			if (buffer.ptr->process_mipmap<snd::th::AUDIO>())
+			if (buffer.ptr->process_mipmap_audio())
 			{
 				buffer.dirty = false;
 			}
