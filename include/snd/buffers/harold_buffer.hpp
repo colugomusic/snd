@@ -14,6 +14,12 @@
 
 namespace snd {
 
+//
+// A sequence of Stanley buffers
+//
+// Old stanley buffers are returned to the pool
+// when this is destructed
+//
 template <size_t SUB_BUFFER_SIZE = STANLEY_BUFFER_DEFAULT_SIZE, class Allocator = std::allocator<float>>
 class HaroldBuffer
 {
@@ -27,16 +33,67 @@ public:
 
 	~HaroldBuffer();
 
-	auto clear_mipmap() -> void;
+	// The required size requested by the client
 	auto get_size() const { return size_; }
+
+	// The total capacity of the underlying sub buffers
 	auto get_actual_size() const { return actual_size_; }
+
+	// Total number of sub buffers
 	auto get_buffer_count() const { return buffers_.size(); }
+
+	// Total number of sub buffers which have been allocated
 	auto get_allocated_buffers() const { return allocated_buffers_; }
-	auto allocate_buffers() -> bool;
-	auto generate_mipmaps() -> bool;
+
+	// Clear the visual mipmap data
+	auto clear_mipmap() -> void;
+
+	// True if all sub buffers have been allocated
 	auto is_ready() const -> bool;
+
+	//
+	// Keep calling this in the GUI thread to allocate sub
+	// buffers a little bit at a time.
+	//
+	// returns false when all sub buffers have been allocated
+	//
+	// Allocation progress (e.g. for displaying progress
+	// bars) can be calculated as:
+	//
+	//	float(get_allocated_buffers()) / get_buffer_count()
+	//
+	auto allocate_buffers() -> bool;
+
+	//
+	// Call this continuously in the GUI thread if you know
+	// the buffer is visible and changing. It doesn't do
+	// anything if the top-level mipmap data hasn't changed.
+	//
+	auto generate_mipmaps() -> bool;
+
+	// We never acquire new sub buffers, so resize() returns
+	// false if there are not enough sub buffers to support
+	// the requested size (in which case you should throw
+	// this Harold buffer away and create a new one of the
+	// required size
 	auto resize(uint32_t required_size) -> bool;
+
+	// Reading to a region of the buffer which has not been
+	// allocated yet will return zero
 	auto read(channel_t channel, uint32_t frame) const -> float;
+
+	// Writing to a region of the buffer which has not been
+	// allocated yet will not do anything
+	auto write(channel_t channel, uint32_t frame, float value) -> void;
+
+	//
+	// Read data in such a way that each chunk of data read
+	// will always belong to the same sub buffer.
+	//
+	// For example if the size of each sub buffer is a
+	// multiple of 64 then you can read in chunks of 64
+	// frames
+	//
 	auto read_aligned(
 		channel_t channel, 
 		uint32_t frame_beg, 
@@ -45,11 +102,23 @@ public:
 		std::function<void(const float* data)> reader,
 		std::function<void()> chunk_not_ready) const -> void;
 
-	auto write(channel_t channel, uint32_t frame, float value) -> void;
-	auto write_aligned(channel_t channel, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void;
+	//
+	// Write data in such a way that each chunk of data
+	// written will always belong to the same sub buffer.
+	//
+	// For example if the size of each sub buffer is a
+	// multiple of 64 then you can write in chunks of 64
+	// frames
+	//
+	auto write_aligned(
+		channel_t channel, 
+		uint32_t frame_beg, 
+		uint32_t frames_to_write, 
+		uint32_t chunk_size, 
+		std::function<void(float* data)> writer) -> void;
 
 	//
-	// The range specified by frame_beg/frames_to_(read/write)
+	// The range specified by frame_beg/frames_to_read
 	// must fall entirely within a single sub-buffer
 	//
 	auto read_sub_buffer(
@@ -58,13 +127,26 @@ public:
 		uint32_t frames_to_read, 
 		std::function<void(const float* data)> reader) const -> bool;
 
+	//
+	// The range specified by frame_beg/frames_to_write
+	// must fall entirely within a single sub-buffer
+	//
 	auto write_sub_buffer(
 		channel_t channel, 
 		uint32_t frame_beg, 
 		uint32_t frames_to_write, 
 		std::function<void(float* data)> writer) -> bool;
 
+	// Read final generated mipmap data
 	auto read_mipmap(channel_t channel, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
+
+	//
+	// Call this in your audio thread after you finish
+	// writing audio data to the buffer
+	//
+	// Preferably call this once per audio callback. We
+	// will write mipmap data for all dirty regions
+	//
 	auto write_audio_mipmap_data() -> void;
 
 private:

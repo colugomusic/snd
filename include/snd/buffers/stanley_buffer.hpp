@@ -19,6 +19,15 @@ namespace snd {
 
 static constexpr auto STANLEY_BUFFER_DEFAULT_SIZE{ 1 << 14 };
 
+//
+// A buffer of floating point audio data and a mipmap for
+// displaying it visually.
+// 
+// Mipmap data can be simultaneously updated while the
+// buffer is being written to
+// 
+// Memory is not allocated until allocate() is called
+//
 template <size_t SIZE = STANLEY_BUFFER_DEFAULT_SIZE, class Allocator = std::allocator<float>>
 class StanleyBuffer
 {
@@ -51,7 +60,11 @@ public:
 
 	auto read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
 
+	// Call in the audio thread after new data has been written
 	auto process_mipmap_audio() -> bool;
+
+	// Call in the GUI thread if the buffer is visible and updating.
+	// If audio data didn't change then this does nothing
 	auto process_mipmap_gui() -> bool;
 
 private:
