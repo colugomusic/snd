@@ -37,6 +37,8 @@ public:
 	// Returns true if memory was actually allocated
 	// Or false if no new memory was allocated
 	auto allocate() -> bool;
+
+	// Doesn't free memory
 	auto release() -> void;
 
 	auto clear_mipmap() -> void;
