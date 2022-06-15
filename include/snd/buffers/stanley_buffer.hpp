@@ -150,8 +150,6 @@ auto StanleyBuffer<SIZE, Allocator>::allocate() -> bool
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::release() -> void
 {
-	ready_.store(false, std::memory_order_release);
-
 	audio_.valid_region = EMPTY_REGION;
 	gui_.valid_region = EMPTY_REGION;
 	beach_.mipmap.dirty_region = EMPTY_REGION;
@@ -166,7 +164,7 @@ auto StanleyBuffer<SIZE, Allocator>::clear_mipmap() -> void
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::is_ready() const -> bool
 {
-	return ready_.load(std::memory_order_relaxed);
+	return ready_.load(std::memory_order_acquire);
 }
 
 template <size_t SIZE, class Allocator>
