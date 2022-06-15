@@ -190,6 +190,8 @@ HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::~HaroldBuffer()
 {
 	for (auto& buffer : buffers_)
 	{
+		if (!buffer.ptr->is_ready()) continue;
+
 		buffer_pool_->release(std::move(buffer.ptr));
 	}
 }
