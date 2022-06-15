@@ -2,7 +2,6 @@
 
 //
 // required libraries:
-//	- cameron314/readerwriterqueue
 //	- colugomusic/stupid
 //
 
@@ -13,7 +12,6 @@
 #include <stupid/stupid.hpp>
 #include <snd/buffers/deferred_buffer.hpp>
 #include <snd/samples/sample_mipmap.hpp>
-#include <snd/threading.hpp>
 
 namespace snd {
 
@@ -93,11 +91,14 @@ private:
 		snd::SampleMipmap::Region valid_region{ EMPTY_REGION };
 	} audio_;
 
+	static constexpr auto GUI{ 0 };
+	static constexpr auto AUDIO{ 1 };
+
 	struct
 	{
-		stupid::BeachBall ball{ snd::th::AUDIO };
-		stupid::BeachBallPlayer<snd::th::GUI> gui{ &ball };
-		stupid::BeachBallPlayer<snd::th::AUDIO> audio{ &ball };
+		stupid::BeachBall ball{ AUDIO };
+		stupid::BeachBallPlayer<GUI> gui{ &ball };
+		stupid::BeachBallPlayer<AUDIO> audio{ &ball };
 
 		struct
 		{

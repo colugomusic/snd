@@ -2,7 +2,6 @@
 
 //
 // required libraries:
-//	- cameron314/readerwriterqueue
 //	- colugomusic/stupid
 //
 
@@ -78,7 +77,7 @@ public:
 	// required size
 	auto resize(uint32_t required_size) -> bool;
 
-	// Reading to a region of the buffer which has not been
+	// Reading from a region of the buffer which has not been
 	// allocated yet will return zero
 	auto read(channel_t channel, uint32_t frame) const -> float;
 
@@ -93,6 +92,10 @@ public:
 	// For example if the size of each sub buffer is a
 	// multiple of 64 then you can read in chunks of 64
 	// frames
+	//
+	// If the sub buffer for a chunk has not been allocated
+	// yet then chunk_not_ready is called instead of the
+	// reader
 	//
 	auto read_aligned(
 		channel_t channel, 
