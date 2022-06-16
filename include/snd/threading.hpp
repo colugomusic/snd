@@ -30,8 +30,6 @@ using Task = std::function<void()>;
 // 
 // - Tasks may only be processed in the specified PROCESS_THREAD.
 //
-// - All tasks are pushed onto the queue from the same PUSH_THREAD
-//
 // - Tasks can optionally expire. Expired tasks are not processed.
 //   The expiry mechanism is specified by the ExpiryPolicy.
 //
