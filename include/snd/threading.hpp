@@ -42,7 +42,7 @@ using Task = std::function<void()>;
 //
 // - If these classes look completely bizarre to you then google
 //   for "policy based class design". This won't stop them from
-//   looking bizarre because policty based class design is
+//   looking bizarre because policy based class design is
 //   for idiots
 //
 template <class TaskType, class ExpiryPolicy, class QueuePolicy, int PUSH_THREAD, int PROCESS_THREAD>
