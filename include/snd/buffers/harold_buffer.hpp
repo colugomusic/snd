@@ -13,13 +13,25 @@
 
 namespace snd {
 
+static constexpr size_t HAROLD_BUFFER_DEFAULT_ALLOC_SIZE{ 16 };
+
 //
 // A sequence of Stanley buffers
 //
 // Old stanley buffers are returned to the pool
 // when this is destructed
 //
-template <size_t SUB_BUFFER_SIZE = STANLEY_BUFFER_DEFAULT_SIZE, class Allocator = std::allocator<float>>
+template <
+	// How large are the sub buffers?
+	size_t SUB_BUFFER_SIZE = STANLEY_BUFFER_DEFAULT_SIZE,
+
+	// How many sub buffers should we allocate at a time?
+	// Allocation is going to block the thread (probably
+	// your GUI thread) so this should be small enough
+	// that the pause is not visible to the human eye
+	size_t ALLOC_SIZE = HAROLD_BUFFER_DEFAULT_ALLOC_SIZE,
+
+	class Allocator = std::allocator<float>>
 class HaroldBuffer
 {
 public:
@@ -177,16 +189,16 @@ private:
 	bool buffer_dirt_flag_{};
 };
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size)
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size)
 	: size_ { required_size }
 	, buffer_pool_{ buffer_pool }
 {
 	acquire_buffers(row_count);
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::~HaroldBuffer()
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::~HaroldBuffer()
 {
 	for (auto& buffer : buffers_)
 	{
@@ -196,8 +208,8 @@ HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::~HaroldBuffer()
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::acquire_buffers(row_t row_count) -> void
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::acquire_buffers(row_t row_count) -> void
 {
 	while (actual_size_ < size_)
 	{
@@ -209,8 +221,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::acquire_buffers(row_t row_count) 
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::clear_mipmap() -> void
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::clear_mipmap() -> void
 {
 	for (auto& buffer : buffers_)
 	{
@@ -218,14 +230,14 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::clear_mipmap() -> void
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::is_ready() const -> bool
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::is_ready() const -> bool
 {
 	return allocated_buffers_ >= buffers_.size();
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::resize(uint32_t required_size) -> bool
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::resize(uint32_t required_size) -> bool
 {
 	if (required_size > actual_size_) return false;
 
@@ -234,14 +246,14 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::resize(uint32_t required_size) ->
 	return true;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::get_local_frame(uint32_t frame) -> uint32_t
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::get_local_frame(uint32_t frame) -> uint32_t
 {
 	return frame % SUB_BUFFER_SIZE;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::get_buffer(uint32_t frame) -> Buffer*
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::get_buffer(uint32_t frame) -> Buffer*
 {
 	if (frame >= size_) return {};
 
@@ -256,14 +268,14 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::get_buffer(uint32_t frame) -> Buf
 	return &buffer;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::get_buffer(uint32_t frame) const -> const Buffer*
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::get_buffer(uint32_t frame) const -> const Buffer*
 {
 	return const_cast<HaroldBuffer*>(this)->get_buffer(frame);
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read(row_t row, uint32_t frame) const -> float
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read(row_t row, uint32_t frame) const -> float
 {
 	auto buffer{ get_buffer(frame) };
 
@@ -272,8 +284,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read(row_t row, uint32_t frame) c
 	return buffer->ptr->read(row, get_local_frame(frame));
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read_aligned(
 	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_read, 
@@ -297,8 +309,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(row_t row, uint32_t frame, float value) -> void
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write(row_t row, uint32_t frame, float value) -> void
 {
 	auto buffer{ get_buffer(frame) };
 
@@ -309,8 +321,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(row_t row, uint32_t frame, 
 	buffer_dirt_flag_ = true;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_sub_buffer(
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read_sub_buffer(
 	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_read, 
@@ -327,8 +339,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_sub_buffer(
 	return true;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write_sub_buffer(
 	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_write, 
@@ -347,8 +359,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
 	return true;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_aligned(row_t row, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write_aligned(row_t row, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void
 {
 	auto frames_remaining{ frames_to_write };
 
@@ -363,29 +375,44 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_aligned(row_t row, uint32_t
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::allocate_buffers() -> bool
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::allocate_buffers() -> bool
 {
 	if (allocated_buffers_ >= buffers_.size())
 	{
 		return false;
 	}
 
-	for (auto i{ allocated_buffers_ }; i < buffers_.size(); i++)
+	//
+	// StanleyBuffer::allocate() does not necessarily need to
+	// allocate actual memory because it may be being re-used
+	// in which case it is already ready to go.
+	//
+	// We try to do exactly ALLOC_SIZE actual memory allocations
+	// here so that this method takes more or less the same
+	// amount of time each time it is called
+	//
+	const auto unallocated_buffers{ buffers_.size() - allocated_buffers_ };
+	auto remaining{ std::min(unallocated_buffers, ALLOC_SIZE) };
+
+	while (remaining > 0)
 	{
-		const auto& buffer{ buffers_[i] };
+		if (allocated_buffers_ >= buffers_.size()) return true;
 
-		allocated_buffers_++;
+		const auto& buffer{ buffers_[allocated_buffers_++] };
 
-		// If no actual memory was allocated, continue iterating
-		if (buffer.ptr->allocate()) break;
+		// Returns false if no actual memory was allocated
+		if (buffer.ptr->allocate())
+		{
+			remaining--;
+		}
 	}
 
 	return true;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::generate_mipmaps() -> bool
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::generate_mipmaps() -> bool
 {
 	bool mipmap_generated{};
 
@@ -399,8 +426,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::generate_mipmaps() -> bool
 	return mipmap_generated;
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_audio_mipmap_data() -> void
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write_audio_mipmap_data() -> void
 {
 	if (!buffer_dirt_flag_) return;
 
@@ -427,8 +454,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_audio_mipmap_data() -> void
 	}
 }
 
-template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame
 {
 	const auto index_a{ static_cast<uint32_t>(std::floor(frame)) };
 	const auto index_b{ static_cast<uint32_t>(std::ceil(frame)) };
