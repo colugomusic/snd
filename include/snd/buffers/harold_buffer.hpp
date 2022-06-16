@@ -26,9 +26,9 @@ public:
 
 	using buffer_pool_t = StanleyBufferPool<SUB_BUFFER_SIZE, Allocator>;
 	using buffer_t = typename buffer_pool_t::buffer_t;
-	using channel_t = uint16_t;
+	using row_t = typename buffer_t::row_t;
 
-	HaroldBuffer(buffer_pool_t* buffer_pool, uint32_t required_size);
+	HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size);
 
 	~HaroldBuffer();
 
@@ -79,11 +79,11 @@ public:
 
 	// Reading from a region of the buffer which has not been
 	// allocated yet will return zero
-	auto read(channel_t channel, uint32_t frame) const -> float;
+	auto read(row_t row, uint32_t frame) const -> float;
 
 	// Writing to a region of the buffer which has not been
 	// allocated yet will not do anything
-	auto write(channel_t channel, uint32_t frame, float value) -> void;
+	auto write(row_t row, uint32_t frame, float value) -> void;
 
 	//
 	// Read data in such a way that each chunk of data read
@@ -98,7 +98,7 @@ public:
 	// reader
 	//
 	auto read_aligned(
-		channel_t channel, 
+		row_t row, 
 		uint32_t frame_beg, 
 		uint32_t frames_to_read, 
 		uint32_t chunk_size, 
@@ -114,7 +114,7 @@ public:
 	// frames
 	//
 	auto write_aligned(
-		channel_t channel, 
+		row_t row, 
 		uint32_t frame_beg, 
 		uint32_t frames_to_write, 
 		uint32_t chunk_size, 
@@ -125,7 +125,7 @@ public:
 	// must fall entirely within a single sub-buffer
 	//
 	auto read_sub_buffer(
-		channel_t channel, 
+		row_t row, 
 		uint32_t frame_beg, 
 		uint32_t frames_to_read, 
 		std::function<void(const float* data)> reader) const -> bool;
@@ -135,13 +135,13 @@ public:
 	// must fall entirely within a single sub-buffer
 	//
 	auto write_sub_buffer(
-		channel_t channel, 
+		row_t row, 
 		uint32_t frame_beg, 
 		uint32_t frames_to_write, 
 		std::function<void(float* data)> writer) -> bool;
 
 	// Read final generated mipmap data
-	auto read_mipmap(channel_t channel, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
+	auto read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
 
 	//
 	// Call this in your audio thread after you finish
@@ -165,7 +165,7 @@ private:
 	uint32_t size_{};
 	uint32_t actual_size_{};
 
-	auto acquire_buffers() -> void;
+	auto acquire_buffers(row_t row_count) -> void;
 	auto get_buffer(uint32_t frame) -> Buffer*;
 	auto get_buffer(uint32_t frame) const -> const Buffer*;
 
@@ -178,11 +178,11 @@ private:
 };
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, uint32_t required_size)
-	: size_{ required_size }
+HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size)
+	: size_ { required_size }
 	, buffer_pool_{ buffer_pool }
 {
-	acquire_buffers();
+	acquire_buffers(row_count);
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
@@ -197,11 +197,11 @@ HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::~HaroldBuffer()
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::acquire_buffers() -> void
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::acquire_buffers(row_t row_count) -> void
 {
 	while (actual_size_ < size_)
 	{
-		Buffer buffer{ buffer_pool_->acquire(2) };
+		Buffer buffer{ buffer_pool_->acquire(row_count) };
 
 		buffers_.push_back(std::move(buffer));
 
@@ -263,18 +263,18 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::get_buffer(uint32_t frame) const 
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read(channel_t channel, uint32_t frame) const -> float
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read(row_t row, uint32_t frame) const -> float
 {
 	auto buffer{ get_buffer(frame) };
 
 	if (!buffer) return 0.0f;
 
-	return buffer->ptr->read(channel, get_local_frame(frame));
+	return buffer->ptr->read(row, get_local_frame(frame));
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
-	channel_t channel, 
+	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_read, 
 	uint32_t chunk_size, 
@@ -287,7 +287,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
 	{
 		const auto chunk_frames_to_read{ std::min(frames_remaining, chunk_size) };
 
-		if (!read_sub_buffer(channel, frame_beg, chunk_frames_to_read, reader))
+		if (!read_sub_buffer(row, frame_beg, chunk_frames_to_read, reader))
 		{
 			chunk_not_ready();
 		}
@@ -298,20 +298,20 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_aligned(
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(channel_t channel, uint32_t frame, float value) -> void
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write(row_t row, uint32_t frame, float value) -> void
 {
 	auto buffer{ get_buffer(frame) };
 
 	if (!buffer) return;
 
-	buffer->ptr->write(channel, get_local_frame(frame), value);
+	buffer->ptr->write(row, get_local_frame(frame), value);
 	buffer->dirty = true;
 	buffer_dirt_flag_ = true;
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_sub_buffer(
-	channel_t channel, 
+	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_read, 
 	std::function<void(const float* data)> reader) const -> bool
@@ -322,14 +322,14 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_sub_buffer(
 
 	if (!buffer) return false;
 
-	buffer->ptr->read(channel, get_local_frame(frame_beg), frames_to_read, reader);
+	buffer->ptr->read(row, get_local_frame(frame_beg), frames_to_read, reader);
 
 	return true;
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
-	channel_t channel, 
+	row_t row, 
 	uint32_t frame_beg, 
 	uint32_t frames_to_write, 
 	std::function<void(float* data)> writer) -> bool
@@ -340,7 +340,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
 
 	if (!buffer) return false;
 
-	buffer->ptr->write(channel, get_local_frame(frame_beg), frames_to_write, writer);
+	buffer->ptr->write(row, get_local_frame(frame_beg), frames_to_write, writer);
 	buffer->dirty = true;
 	buffer_dirt_flag_ = true;
 
@@ -348,7 +348,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_sub_buffer(
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_aligned(channel_t channel, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_aligned(row_t row, uint32_t frame_beg, uint32_t frames_to_write, uint32_t chunk_size, std::function<void(float* data)> writer) -> void
 {
 	auto frames_remaining{ frames_to_write };
 
@@ -356,7 +356,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_aligned(channel_t channel, 
 	{
 		const auto chunk_frames_to_write{ std::min(frames_remaining, chunk_size) };
 
-		write_sub_buffer(channel, frame_beg, chunk_frames_to_write, writer);
+		write_sub_buffer(row, frame_beg, chunk_frames_to_write, writer);
 
 		frame_beg += chunk_size;
 		frames_remaining -= chunk_frames_to_write;
@@ -428,7 +428,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::write_audio_mipmap_data() -> void
 }
 
 template <size_t SUB_BUFFER_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_mipmap(channel_t channel, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame
+auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame
 {
 	const auto index_a{ static_cast<uint32_t>(std::floor(frame)) };
 	const auto index_b{ static_cast<uint32_t>(std::ceil(frame)) };
@@ -446,8 +446,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, Allocator>::read_mipmap(channel_t channel, fl
 	auto& buffer_a{ *buffers_[buffer_index_a].ptr };
 	auto& buffer_b{ *buffers_[buffer_index_b].ptr };
 
-	const auto frame_a{ buffer_a.read_mipmap(channel, local_frame_a, bin_size) };
-	const auto frame_b{ buffer_b.read_mipmap(channel, local_frame_b, bin_size) };
+	const auto frame_a{ buffer_a.read_mipmap(row, local_frame_a, bin_size) };
+	const auto frame_b{ buffer_b.read_mipmap(row, local_frame_b, bin_size) };
 
 	return snd::SampleMipmap::LODFrame::lerp(frame_a, frame_b, t);
 }
