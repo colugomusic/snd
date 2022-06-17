@@ -8,6 +8,7 @@
 #include <array>
 #include <atomic>
 #include <cassert>
+#include <functional>
 #include <vector>
 #include <stupid/stupid.hpp>
 #include <snd/buffers/deferred_buffer.hpp>
@@ -26,46 +27,18 @@ static constexpr auto STANLEY_BUFFER_DEFAULT_SIZE{ 1 << 14 };
 // 
 // Memory is not allocated until allocate() is called
 //
-template <size_t SIZE = STANLEY_BUFFER_DEFAULT_SIZE, class Allocator = std::allocator<float>>
+template <size_t SIZE = STANLEY_BUFFER_DEFAULT_SIZE, class Allocator = ::std::allocator<float>>
 class StanleyBuffer
 {
-public:
+	friend class AudioAccess;
+	friend class GuiAccess;
+
+	static constexpr auto GUI{ 0 };
+	static constexpr auto AUDIO{ 1 };
 
 	template <class T> static constexpr auto is_power_of_two(T x) { return (SIZE & (SIZE -1)) == 0; }
 
 	static_assert(is_power_of_two(SIZE));
-
-	using row_t = typename DeferredBuffer<float, SIZE>::row_t;
-
-	StanleyBuffer(row_t row_count);
-
-	// May not actually need to allocate memory, but will
-	// always set 'ready' state to true
-	// Returns true if memory was actually allocated
-	// Or false if no new memory was allocated
-	auto allocate() -> bool;
-
-	// Doesn't free memory
-	auto release() -> void;
-
-	auto clear_mipmap() -> void;
-	auto get_row_count() const { return row_count_; }
-	auto is_ready() const -> bool;
-	auto read(row_t row, uint32_t frame) const -> float;
-	auto read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool;
-	auto write(row_t row, uint32_t frame, float value) -> void;
-	auto write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void;
-
-	auto read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
-
-	// Call in the audio thread after new data has been written
-	auto process_mipmap_audio() -> bool;
-
-	// Call in the GUI thread if the buffer is visible and updating.
-	// If audio data didn't change then this does nothing
-	auto process_mipmap_gui() -> bool;
-
-private:
 
 	static constexpr snd::SampleMipmap::Region EMPTY_REGION
 	{
@@ -73,226 +46,310 @@ private:
 		std::numeric_limits<uint64_t>::min()
 	};
 
-	std::atomic<bool> ready_;
-	row_t row_count_;
+public:
 
-	struct
+	using row_t = typename DeferredBuffer<float, SIZE>::row_t;
+
+	//
+	// Audio thread can access the buffer through here
+	//
+	class AudioAccess
 	{
-		std::unique_ptr<snd::SampleMipmap> mipmap;
-		snd::SampleMipmap::Region valid_region{ EMPTY_REGION };
-	} gui_;
+	public:
 
-	struct Audio
+		AudioAccess(StanleyBuffer* self);
+
+		auto read(row_t row, uint32_t frame) const -> float;
+		auto read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool;
+		auto write(row_t row, uint32_t frame, float value) -> void;
+		auto write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void;
+
+		// Call after new data has been written
+		auto process_mipmap() -> bool;
+
+	private:
+
+		StanleyBuffer* const SELF;
+		stupid::BeachBallPlayer<AUDIO> beach_player_;
+		snd::SampleMipmap::Region dirty_region_{};
+	} audio;
+
+	//
+	// GUI thread can access the buffer through here
+	//
+	class GuiAccess
 	{
-		Audio(row_t row_count);
+	public:
 
+		GuiAccess(StanleyBuffer* self);
+
+		// May not actually need to allocate memory, but will
+		// always set 'ready' state to true
+		// Returns true if memory was actually allocated
+		// Or false if no new memory was allocated
+		auto allocate() -> bool;
+
+		// Doesn't free memory
+		auto release() -> void;
+
+		auto clear_mipmap() -> void;
+		auto read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
+
+		// Call if the buffer is visible and updating.
+		// If audio data didn't change then this does nothing
+		auto process_mipmap() -> bool;
+
+	private:
+
+		StanleyBuffer* const SELF;
+		stupid::BeachBallPlayer<GUI> beach_player_;
+		std::unique_ptr<snd::SampleMipmap> mipmap_;
+	} gui;
+
+	const row_t row_count;
+
+	StanleyBuffer(row_t row_count_);
+
+	auto is_ready() const -> bool;
+
+private:
+
+	struct CriticalSection
+	{
+		CriticalSection(row_t row_count) : buffer{ row_count } {}
+
+		std::atomic<bool> ready{ false };
+
+		//
+		// The actual audio buffer which is read and written by
+		// the audio thread.
+		//
+		// This is accessed once by the GUI thread in gui.allocate(),
+		// before the audio thread starts accessing it
+		//
 		DeferredBuffer<float, SIZE, Allocator> buffer;
-		snd::SampleMipmap::Region dirty_region{};
-		snd::SampleMipmap::Region valid_region{ EMPTY_REGION };
-	} audio_;
 
-	static constexpr auto GUI{ 0 };
-	static constexpr auto AUDIO{ 1 };
+		//
+		// This region is read and written by the audio thread
+		//
+		// It is also written by the GUI thread once in gui.release()
+		// 
+		// The audio thread should have finished accessing this data
+		// by the time gui.release() is called
+		//
+		snd::SampleMipmap::Region readable_region{ EMPTY_REGION };
 
-	struct
-	{
-		stupid::BeachBall ball{ AUDIO };
-		stupid::BeachBallPlayer<GUI> gui{ &ball };
-		stupid::BeachBallPlayer<AUDIO> audio{ &ball };
-
+		//
+		// Other synchronization happens via beach ball
+		//
 		struct
 		{
-			std::vector<std::vector<snd::SampleMipmap::Frame>> staging_buffers;
-			snd::SampleMipmap::Region dirty_region{};
-		} mipmap;
-	} beach_;
+			stupid::BeachBall ball{ AUDIO };
+
+			struct
+			{
+				std::vector<std::vector<snd::SampleMipmap::Frame>> staging_buffers;
+				snd::SampleMipmap::Region dirty_region{};
+			} mipmap;
+		} beach;
+	} critical_{ row_count };
 };
 
 template <size_t SIZE, class Allocator>
-StanleyBuffer<SIZE, Allocator>::Audio::Audio(row_t row_count)
-	: buffer{ row_count }
+StanleyBuffer<SIZE, Allocator>::StanleyBuffer(row_t row_count_)
+	: row_count{ row_count_ }
+	, audio{ this }
+	, gui{ this }
 {
-}
-
-template <size_t SIZE, class Allocator>
-StanleyBuffer<SIZE, Allocator>::StanleyBuffer(row_t row_count)
-	: row_count_{ row_count }
-	, audio_ { row_count }
-{
-	beach_.mipmap.staging_buffers.resize(row_count_);
-	ready_.store(false, std::memory_order_relaxed);
-}
-
-template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::allocate() -> bool
-{
-	if (!audio_.buffer.is_ready())
-	{
-		assert(!gui_.mipmap);
-
-		audio_.buffer.allocate();
-
-		for (row_t row{}; row < row_count_; row++)
-		{
-			beach_.mipmap.staging_buffers[row].resize(SIZE);
-		}
-
-		gui_.mipmap = std::make_unique<snd::SampleMipmap>(row_count_, SIZE);
-
-		ready_.store(true, std::memory_order_release);
-		return true;
-	}
-
-	ready_.store(true, std::memory_order_relaxed);
-	return false;
-}
-
-template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::release() -> void
-{
-	audio_.valid_region = EMPTY_REGION;
-	gui_.valid_region = EMPTY_REGION;
-	beach_.mipmap.dirty_region = EMPTY_REGION;
-}
-
-template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::clear_mipmap() -> void
-{
-	gui_.valid_region = EMPTY_REGION;
+	critical_.beach.mipmap.staging_buffers.resize(row_count);
 }
 
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::is_ready() const -> bool
 {
-	return ready_.load(std::memory_order_acquire);
+	return critical_.ready.load(std::memory_order_acquire);
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Audio thread
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+template <size_t SIZE, class Allocator>
+StanleyBuffer<SIZE, Allocator>::AudioAccess::AudioAccess(StanleyBuffer* self)
+	: SELF{ self }
+	, beach_player_{ &self->critical_.beach.ball }
+{
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::read(row_t row, uint32_t frame) const -> float
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame) const -> float
 {
-	assert(is_ready());
+	assert(SELF->is_ready());
 
-	if (audio_.valid_region.beg >= audio_.valid_region.end) return 0.0f;
-	if (frame < audio_.valid_region.beg || frame >= audio_.valid_region.end) return 0.0f;
+	const auto readable_region{ SELF->critical_.readable_region };
 
-	return audio_.buffer.read(row, frame);
+	if (readable_region.beg >= readable_region.end) return 0.0f;
+	if (frame < readable_region.beg || frame >= readable_region.end) return 0.0f;
+
+	return SELF->critical_.buffer.read(row, frame);
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::write(row_t row, uint32_t frame, float value) -> void
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t frame, float value) -> void
 {
-	assert(is_ready());
+	assert(SELF->is_ready());
 
-	audio_.buffer.write(row, frame, value);
+	SELF->critical_.buffer.write(row, frame, value);
 
-	if (frame < audio_.dirty_region.beg) audio_.dirty_region.beg = frame;
-	if (frame >= audio_.dirty_region.end) audio_.dirty_region.end = frame + 1;
-	if (frame < audio_.valid_region.beg) audio_.valid_region.beg = frame;
-	if (frame >= audio_.valid_region.end) audio_.valid_region.end = frame + 1;
+	if (frame < dirty_region_.beg) dirty_region_.beg = frame;
+	if (frame >= dirty_region_.end) dirty_region_.end = frame + 1;
+	if (frame < SELF->critical_.readable_region.beg) SELF->critical_.readable_region.beg = frame;
+	if (frame >= SELF->critical_.readable_region.end) SELF->critical_.readable_region.end = frame + 1;
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool
 {
-	assert(is_ready());
-	assert(row < row_count_);
+	assert(SELF->is_ready());
+	assert(row < SELF->row_count);
 
-	if (audio_.valid_region.beg >= audio_.valid_region.end) return false;
-	if (frame_beg < audio_.valid_region.beg || frame_beg + frame_count >= audio_.valid_region.end) return false;
+	const auto readable_region{ SELF->critical_.readable_region };
 
-	audio_.buffer.read(row, frame_beg, reader);
+	if (readable_region.beg >= readable_region.end) return false;
+	if (frame_beg < readable_region.beg || frame_beg + frame_count >= readable_region.end) return false;
+
+	SELF->critical_.buffer.read(row, frame_beg, reader);
 
 	return true;
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void
 {
-	assert(is_ready());
-	assert(row < row_count_);
+	assert(SELF->is_ready());
+	assert(row < SELF->row_count);
 
-	audio_.buffer.write(row, frame_beg, writer);
+	SELF->critical_.buffer.write(row, frame_beg, writer);
 
-	if (frame_beg < audio_.dirty_region.beg) audio_.dirty_region.beg = frame_beg;
-	if (frame_beg + frame_count >= audio_.dirty_region.end) audio_.dirty_region.end = frame_beg + frame_count;
-	if (frame_beg < audio_.valid_region.beg) audio_.valid_region.beg = frame_beg;
-	if (frame_beg + frame_count >= audio_.valid_region.end) audio_.valid_region.end = frame_beg + frame_count;
+	if (frame_beg < dirty_region_.beg) dirty_region_.beg = frame_beg;
+	if (frame_beg + frame_count >= dirty_region_.end) dirty_region_.end = frame_beg + frame_count;
+	if (frame_beg < SELF->critical_.readable_region.beg) SELF->critical_.readable_region.beg = frame_beg;
+	if (frame_beg + frame_count >= SELF->critical_.readable_region.end) SELF->critical_.readable_region.end = frame_beg + frame_count;
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::process_mipmap() -> bool
 {
-	static constexpr snd::SampleMipmap::LODFrame SILENT{ snd::SampleMipmap::SILENT, snd::SampleMipmap::SILENT };
+	if (!beach_player_.ensure()) return false;
 
-	if (!gui_.mipmap) return SILENT;
-	if (gui_.valid_region.beg >= gui_.valid_region.end) return SILENT;
-	if (frame < gui_.valid_region.beg || frame >= gui_.valid_region.end) return SILENT;
+	if (dirty_region_.beg >= dirty_region_.end) return true;
 
-	return gui_.mipmap->read(gui_.mipmap->bin_size_to_lod(bin_size), row, float(frame));
-}
+	const auto num_dirty_frames{ dirty_region_.end - dirty_region_.beg };
 
-template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::process_mipmap_audio() -> bool
-{
-	if (!beach_.audio.ensure()) return false;
-
-	if (audio_.dirty_region.beg >= audio_.dirty_region.end) return true;
-
-	const auto num_dirty_frames{ audio_.dirty_region.end - audio_.dirty_region.beg };
-
-	for (uint32_t row{}; row < row_count_; row++)
+	for (uint32_t row{}; row < SELF->row_count; row++)
 	{
 		for (uint64_t i{}; i < num_dirty_frames; i++)
 		{
-			beach_.mipmap.staging_buffers[row][audio_.dirty_region.beg + i] =
-				snd::SampleMipmap::encode(audio_.buffer.read(row, i + audio_.dirty_region.beg));
+			SELF->critical_.beach.mipmap.staging_buffers[row][dirty_region_.beg + i] =
+				snd::SampleMipmap::encode(SELF->critical_.buffer.read(row, i + dirty_region_.beg));
 		}
 	}
 
-	beach_.mipmap.dirty_region = audio_.dirty_region;
-	audio_.dirty_region = EMPTY_REGION;
+	SELF->critical_.beach.mipmap.dirty_region = dirty_region_;
+	dirty_region_ = EMPTY_REGION;
 
-	beach_.audio.throw_ball();
+	beach_player_.throw_ball();
 
 	return true;
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// GUI thread
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::process_mipmap_gui() -> bool
+StanleyBuffer<SIZE, Allocator>::GuiAccess::GuiAccess(StanleyBuffer* self)
+	: SELF{ self }
+	, beach_player_{ &self->critical_.beach.ball }
 {
-	if (!beach_.gui.ensure()) return false;
+}
 
-	if (beach_.mipmap.dirty_region.beg >= beach_.mipmap.dirty_region.end)
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::allocate() -> bool
+{
+	if (!SELF->critical_.buffer.is_ready())
 	{
-		beach_.gui.throw_ball();
+		assert(!mipmap_);
+
+		SELF->critical_.buffer.allocate();
+
+		for (row_t row{}; row < SELF->row_count; row++)
+		{
+			SELF->critical_.beach.mipmap.staging_buffers[row].resize(SIZE);
+		}
+
+		mipmap_ = std::make_unique<snd::SampleMipmap>(SELF->row_count, SIZE);
+
+		SELF->critical_.ready.store(true, std::memory_order_release);
 		return true;
 	}
 
-	const auto num_dirty_frames{ beach_.mipmap.dirty_region.end - beach_.mipmap.dirty_region.beg };
+	SELF->critical_.ready.store(true, std::memory_order_relaxed);
+	return false;
+}
 
-	for (uint32_t row{}; row < row_count_; row++)
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::release() -> void
+{
+	SELF->critical_.readable_region = EMPTY_REGION;
+	SELF->critical_.beach.mipmap.dirty_region = EMPTY_REGION;
+}
+
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::clear_mipmap() -> void
+{
+	mipmap_->clear();
+}
+
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::process_mipmap() -> bool
+{
+	if (!beach_player_.ensure()) return false;
+
+	if (SELF->critical_.beach.mipmap.dirty_region.beg >= SELF->critical_.beach.mipmap.dirty_region.end)
+	{
+		beach_player_.throw_ball();
+		return true;
+	}
+
+	const auto num_dirty_frames{ SELF->critical_.beach.mipmap.dirty_region.end - SELF->critical_.beach.mipmap.dirty_region.beg };
+
+	for (uint32_t row{}; row < SELF->row_count; row++)
 	{
 		const auto writer = [=](snd::SampleMipmap::Frame* data)
 		{
 			for (uint64_t i{}; i < num_dirty_frames; i++)
 			{
-				data[i] = beach_.mipmap.staging_buffers[row][i + beach_.mipmap.dirty_region.beg];
+				data[i] = SELF->critical_.beach.mipmap.staging_buffers[row][i + SELF->critical_.beach.mipmap.dirty_region.beg];
 			}
 		};
 
-		gui_.mipmap->write(row, beach_.mipmap.dirty_region.beg, writer);
+		mipmap_->write(row, SELF->critical_.beach.mipmap.dirty_region.beg, writer);
 	}
 
-	if (beach_.mipmap.dirty_region.beg < gui_.valid_region.beg) gui_.valid_region.beg = beach_.mipmap.dirty_region.beg;
-	if (beach_.mipmap.dirty_region.end > gui_.valid_region.end) gui_.valid_region.end = beach_.mipmap.dirty_region.end;
+	mipmap_->update(SELF->critical_.beach.mipmap.dirty_region);
 
-	gui_.mipmap->update(beach_.mipmap.dirty_region);
+	SELF->critical_.beach.mipmap.dirty_region = EMPTY_REGION;
 
-	beach_.mipmap.dirty_region = EMPTY_REGION;
-
-	beach_.gui.throw_ball();
+	beach_player_.throw_ball();
 
 	return true;
+}
+
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame
+{
+	if (!mipmap_) return snd::SampleMipmap::SILENT_FRAME;
+
+	return mipmap_->read(mipmap_->bin_size_to_lod(bin_size), row, float(frame));
 }
 
 } // snd

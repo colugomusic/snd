@@ -41,8 +41,8 @@ auto StanleyBufferPool<SIZE, Allocator>::acquire(row_t row_count) -> std::unique
 template <size_t SIZE, class Allocator>
 auto StanleyBufferPool<SIZE, Allocator>::release(std::unique_ptr<buffer_t> buffer) -> void
 {
-	buffer->release();
-	buffers_[buffer->get_row_count()].push_back(std::move(buffer));
+	buffer->gui.release();
+	buffers_[buffer->row_count].push_back(std::move(buffer));
 }
 
 } // snd

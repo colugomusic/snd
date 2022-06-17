@@ -226,7 +226,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::clear_mipmap() -> voi
 {
 	for (auto& buffer : buffers_)
 	{
-		buffer.ptr->clear_mipmap();
+		buffer.ptr->gui.clear_mipmap();
 	}
 }
 
@@ -281,7 +281,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read(row_t row, uint3
 
 	if (!buffer) return 0.0f;
 
-	return buffer->ptr->read(row, get_local_frame(frame));
+	return buffer->ptr->audio.read(row, get_local_frame(frame));
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
@@ -316,7 +316,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write(row_t row, uint
 
 	if (!buffer) return;
 
-	buffer->ptr->write(row, get_local_frame(frame), value);
+	buffer->ptr->audio.write(row, get_local_frame(frame), value);
 	buffer->dirty = true;
 	buffer_dirt_flag_ = true;
 }
@@ -334,7 +334,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read_sub_buffer(
 
 	if (!buffer) return false;
 
-	buffer->ptr->read(row, get_local_frame(frame_beg), frames_to_read, reader);
+	buffer->ptr->audio.read(row, get_local_frame(frame_beg), frames_to_read, reader);
 
 	return true;
 }
@@ -352,7 +352,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write_sub_buffer(
 
 	if (!buffer) return false;
 
-	buffer->ptr->write(row, get_local_frame(frame_beg), frames_to_write, writer);
+	buffer->ptr->audio.write(row, get_local_frame(frame_beg), frames_to_write, writer);
 	buffer->dirty = true;
 	buffer_dirt_flag_ = true;
 
@@ -402,7 +402,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::allocate_buffers() ->
 		const auto& buffer{ buffers_[allocated_buffers_++] };
 
 		// Returns false if no actual memory was allocated
-		if (buffer.ptr->allocate())
+		if (buffer.ptr->gui.allocate())
 		{
 			remaining--;
 		}
@@ -418,7 +418,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::generate_mipmaps() ->
 
 	for (const auto& buffer : buffers_)
 	{
-		auto result{ buffer.ptr->process_mipmap_gui() };
+		auto result{ buffer.ptr->gui.process_mipmap() };
 
 		if (result) mipmap_generated = true;
 	}
@@ -437,7 +437,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::write_audio_mipmap_da
 	{
 		if (buffer.dirty)
 		{
-			if (buffer.ptr->process_mipmap_audio())
+			if (buffer.ptr->audio.process_mipmap())
 			{
 				buffer.dirty = false;
 			}
@@ -473,8 +473,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::read_mipmap(row_t row
 	auto& buffer_a{ *buffers_[buffer_index_a].ptr };
 	auto& buffer_b{ *buffers_[buffer_index_b].ptr };
 
-	const auto frame_a{ buffer_a.read_mipmap(row, local_frame_a, bin_size) };
-	const auto frame_b{ buffer_b.read_mipmap(row, local_frame_b, bin_size) };
+	const auto frame_a{ buffer_a.gui.read_mipmap(row, local_frame_a, bin_size) };
+	const auto frame_b{ buffer_b.gui.read_mipmap(row, local_frame_b, bin_size) };
 
 	return snd::SampleMipmap::LODFrame::lerp(frame_a, frame_b, t);
 }
