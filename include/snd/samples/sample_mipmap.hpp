@@ -26,7 +26,7 @@ public:
 	// 127 ==  0
 	// 254 == +1
 	using Frame = uint8_t;
-	static constexpr Frame SILENT{ 127 };
+	static constexpr Frame SILENT_VALUE{ 127 };
 
 	struct LODFrame
 	{
@@ -36,10 +36,23 @@ public:
 		static auto lerp(LODFrame a, LODFrame b, float t) -> LODFrame;
 	};
 
+	static constexpr LODFrame SILENT_FRAME{ SILENT_VALUE, SILENT_VALUE };
+
 	struct Region
 	{
 		uint64_t beg{};
 		uint64_t end{};
+
+		bool is_empty() const
+		{
+			return beg >= end;
+		}
+	};
+
+	static constexpr Region EMPTY_REGION
+	{
+		std::numeric_limits<uint64_t>::max(),
+		std::numeric_limits<uint64_t>::min()
 	};
 
 	// that 'detail' parameter:
@@ -57,6 +70,7 @@ public:
 	SampleMipmap(SampleMipmap&& rhs) = default;
 	SampleMipmap& operator=(SampleMipmap&& rhs) = default;
 
+	auto clear() -> void;
 	auto lod_count() const { return lods_.size() + 1; }
 	auto bin_size_to_lod(float bin_size) const -> float;
 
@@ -100,6 +114,7 @@ private:
 		const int bin_size;
 
 		Data data;
+		Region valid_region{ EMPTY_REGION };
 
 		LOD(uint16_t index, uint16_t channel_count, uint64_t frame_count, uint8_t detail);
 	};
@@ -110,6 +125,7 @@ private:
 		using Data = std::vector<Channel>;
 
 		Data data;
+		Region valid_region{ EMPTY_REGION };
 	};
 
 	auto read(uint16_t channel, float frame) const -> Frame;
@@ -174,7 +190,7 @@ inline auto SampleMipmap::LODFrame::lerp(LODFrame a, LODFrame b, float t) -> LOD
 inline SampleMipmap::LOD::LOD(uint16_t index, uint16_t channel_count, uint64_t frame_count, uint8_t detail)
 	: index{ index }
 	, bin_size{ int(std::pow(detail, index)) }
-	, data{ static_cast<size_t>(channel_count), Channel(frame_count, LODFrame{ SILENT, SILENT }) }
+	, data{ static_cast<size_t>(channel_count), Channel(frame_count, SILENT_FRAME) }
 {
 	assert(detail >= 2);
 }
@@ -183,7 +199,7 @@ inline SampleMipmap::SampleMipmap(uint16_t channel_count, uint64_t frame_count, 
 	: channel_count_{ channel_count }
 	, frame_count_{ frame_count }
 	, detail_{ static_cast<uint8_t>(detail + 2) }
-	, lod0_{ LOD0::Data{ static_cast<size_t>(channel_count), LOD0::Channel(static_cast<size_t>(frame_count), SILENT)} }
+	, lod0_{ LOD0::Data{ static_cast<size_t>(channel_count), LOD0::Channel(static_cast<size_t>(frame_count), SILENT_VALUE)} }
 {
 	auto size{ frame_count / detail_ };
 
@@ -195,6 +211,16 @@ inline SampleMipmap::SampleMipmap(uint16_t channel_count, uint64_t frame_count, 
 
 		index++;
 		size /= detail_;
+	}
+}
+
+inline auto SampleMipmap::clear() -> void
+{
+	lod0_.valid_region = EMPTY_REGION;
+
+	for (auto& lod : lods_)
+	{
+		lod.valid_region = EMPTY_REGION;
 	}
 }
 
@@ -262,6 +288,9 @@ inline auto SampleMipmap::read(uint16_t lod_idx, uint16_t channel, uint64_t lod_
 
 inline auto SampleMipmap::read(const LOD& lod, uint16_t channel, uint64_t lod_frame) const -> LODFrame
 {
+	if (lod.valid_region.is_empty()) return SILENT_FRAME;
+	if (lod_frame < lod.valid_region.beg || lod_frame >= lod.valid_region.end) return SILENT_FRAME;
+
 	lod_frame = std::min(uint64_t(lod.data[0].size() - 1), lod_frame);
 
 	return lod.data[channel][lod_frame];
@@ -279,6 +308,9 @@ inline auto SampleMipmap::read(uint16_t channel, float frame) const -> Frame
 
 inline auto SampleMipmap::read(uint16_t channel, uint64_t frame) const -> Frame
 {
+	if (lod0_.valid_region.is_empty()) return SILENT_VALUE;
+	if (frame < lod0_.valid_region.beg || frame >= lod0_.valid_region.end) return SILENT_VALUE;
+
 	frame = std::min(uint64_t(lod0_.data[0].size() - 1), frame);
 
 	return lod0_.data[channel][frame];
@@ -332,6 +364,9 @@ inline auto SampleMipmap::generate(LOD* lod, uint16_t channel, Region region) ->
 
 inline auto SampleMipmap::generate(LOD* lod, Region region) -> void
 {
+	if (region.beg < lod->valid_region.beg) lod->valid_region.beg = region.beg;
+	if (region.end > lod->valid_region.end) lod->valid_region.end = region.end;
+
 	for (uint16_t channel{}; channel < channel_count_; channel++)
 	{
 		generate(lod, channel, region);
@@ -342,6 +377,9 @@ inline auto SampleMipmap::update(Region region) -> void
 {
 	assert(region.end > region.beg);
 	assert(region.end <= lod0_.data[0].size());
+
+	if (region.beg < lod0_.valid_region.beg) lod0_.valid_region.beg = region.beg;
+	if (region.end > lod0_.valid_region.end) lod0_.valid_region.end = region.end;
 
 	for (auto& lod : lods_)
 	{
