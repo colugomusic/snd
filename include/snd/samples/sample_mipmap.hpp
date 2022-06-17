@@ -288,10 +288,17 @@ inline auto SampleMipmap::read(uint16_t lod_idx, uint16_t channel, uint64_t lod_
 
 inline auto SampleMipmap::read(const LOD& lod, uint16_t channel, uint64_t lod_frame) const -> LODFrame
 {
-	if (lod.valid_region.is_empty()) return SILENT_FRAME;
-	if (lod_frame < lod.valid_region.beg || lod_frame >= lod.valid_region.end) return SILENT_FRAME;
+	if (lod.valid_region.is_empty())
+	{
+		return SILENT_FRAME;
+	}
 
 	lod_frame = std::min(uint64_t(lod.data[0].size() - 1), lod_frame);
+
+	if (lod_frame < lod.valid_region.beg || lod_frame >= lod.valid_region.end)
+	{
+		return SILENT_FRAME;
+	}
 
 	return lod.data[channel][lod_frame];
 }
@@ -308,10 +315,17 @@ inline auto SampleMipmap::read(uint16_t channel, float frame) const -> Frame
 
 inline auto SampleMipmap::read(uint16_t channel, uint64_t frame) const -> Frame
 {
-	if (lod0_.valid_region.is_empty()) return SILENT_VALUE;
-	if (frame < lod0_.valid_region.beg || frame >= lod0_.valid_region.end) return SILENT_VALUE;
+	if (lod0_.valid_region.is_empty())
+	{
+		return SILENT_VALUE;
+	}
 
 	frame = std::min(uint64_t(lod0_.data[0].size() - 1), frame);
+
+	if (frame < lod0_.valid_region.beg || frame >= lod0_.valid_region.end)
+	{
+		return SILENT_VALUE;
+	}
 
 	return lod0_.data[channel][frame];
 }
