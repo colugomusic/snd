@@ -49,6 +49,7 @@ class StanleyBuffer
 public:
 
 	using row_t = typename DeferredBuffer<float, SIZE>::row_t;
+	using frame_t = typename DeferredBuffer<float, SIZE>::index_t;
 
 	//
 	// Audio thread can access the buffer through here
@@ -59,10 +60,10 @@ public:
 
 		AudioAccess(StanleyBuffer* self);
 
-		auto read(row_t row, uint32_t frame) const -> float;
-		auto read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool;
-		auto write(row_t row, uint32_t frame, float value) -> void;
-		auto write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void;
+		auto read(row_t row, frame_t frame) const -> float;
+		auto read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> bool;
+		auto write(row_t row, frame_t frame, float value) -> void;
+		auto write(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(float* value)> writer) -> void;
 
 		// Call after new data has been written
 		auto process_mipmap() -> bool;
@@ -93,7 +94,7 @@ public:
 		auto release() -> void;
 
 		auto clear_mipmap() -> void;
-		auto read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
+		auto read_mipmap(row_t row, frame_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
 
 		// Call if the buffer is visible and updating.
 		// If audio data didn't change then this does nothing
@@ -181,7 +182,7 @@ StanleyBuffer<SIZE, Allocator>::AudioAccess::AudioAccess(StanleyBuffer* self)
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame) const -> float
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame) const -> float
 {
 	assert(SELF->is_ready());
 
@@ -194,7 +195,7 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t frame, float value) -> void
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, frame_t frame, float value) -> void
 {
 	assert(SELF->is_ready());
 
@@ -207,7 +208,7 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t fram
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(const float*)> reader) const -> bool
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> bool
 {
 	assert(SELF->is_ready());
 	assert(row < SELF->row_count);
@@ -223,7 +224,7 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t frame_beg, uint32_t frame_count, std::function<void(float* value)> writer) -> void
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(float* value)> writer) -> void
 {
 	assert(SELF->is_ready());
 	assert(row < SELF->row_count);
@@ -245,9 +246,9 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::process_mipmap() -> bool
 
 	const auto num_dirty_frames{ dirty_region_.end - dirty_region_.beg };
 
-	for (uint32_t row{}; row < SELF->row_count; row++)
+	for (row_t row{}; row < SELF->row_count; row++)
 	{
-		for (uint64_t i{}; i < num_dirty_frames; i++)
+		for (frame_t i{}; i < num_dirty_frames; i++)
 		{
 			SELF->critical_.beach.mipmap.staging_buffers[row][dirty_region_.beg + i] =
 				snd::SampleMipmap::encode(SELF->critical_.buffer.read(row, i + dirty_region_.beg));
@@ -322,11 +323,11 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::process_mipmap() -> bool
 
 	const auto num_dirty_frames{ SELF->critical_.beach.mipmap.dirty_region.end - SELF->critical_.beach.mipmap.dirty_region.beg };
 
-	for (uint32_t row{}; row < SELF->row_count; row++)
+	for (row_t row{}; row < SELF->row_count; row++)
 	{
 		const auto writer = [=](snd::SampleMipmap::Frame* data)
 		{
-			for (uint64_t i{}; i < num_dirty_frames; i++)
+			for (frame_t i{}; i < num_dirty_frames; i++)
 			{
 				data[i] = SELF->critical_.beach.mipmap.staging_buffers[row][i + SELF->critical_.beach.mipmap.dirty_region.beg];
 			}
@@ -345,7 +346,7 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::process_mipmap() -> bool
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::GuiAccess::read_mipmap(row_t row, uint64_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame
+auto StanleyBuffer<SIZE, Allocator>::GuiAccess::read_mipmap(row_t row, frame_t frame, float bin_size) const -> snd::SampleMipmap::LODFrame
 {
 	if (!mipmap_) return snd::SampleMipmap::SILENT_FRAME;
 

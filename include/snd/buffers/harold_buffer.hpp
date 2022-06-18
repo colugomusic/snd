@@ -44,6 +44,7 @@ public:
 	using buffer_pool_t = StanleyBufferPool<SUB_BUFFER_SIZE, Allocator>;
 	using buffer_t = typename buffer_pool_t::buffer_t;
 	using row_t = typename buffer_t::row_t;
+	using frame_t = uint64_t;
 
 private:
 
@@ -57,7 +58,7 @@ private:
 
 public:
 
-	HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size);
+	HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, frame_t required_size);
 	~HaroldBuffer();
 
 	//
@@ -72,11 +73,11 @@ public:
 
 		// Reading from a region of the buffer which has not been
 		// allocated yet will return zero
-		auto read(row_t row, uint32_t frame) const -> float;
+		auto read(row_t row, frame_t frame) const -> float;
 
 		// Writing to a region of the buffer which has not been
 		// allocated yet will not do anything
-		auto write(row_t row, uint32_t frame, float value) -> void;
+		auto write(row_t row, frame_t frame, float value) -> void;
 
 		//
 		// Read data in such a way that each chunk of data read
@@ -92,9 +93,9 @@ public:
 		//
 		auto read_aligned(
 			row_t row, 
-			uint32_t frame_beg, 
-			uint32_t frames_to_read, 
-			uint32_t chunk_size, 
+			frame_t frame_beg, 
+			frame_t frames_to_read, 
+			frame_t chunk_size, 
 			std::function<void(const float* data)> reader,
 			std::function<void()> chunk_not_ready) const -> void;
 
@@ -108,9 +109,9 @@ public:
 		//
 		auto write_aligned(
 			row_t row, 
-			uint32_t frame_beg, 
-			uint32_t frames_to_write, 
-			uint32_t chunk_size, 
+			frame_t frame_beg, 
+			frame_t frames_to_write, 
+			frame_t chunk_size, 
 			std::function<void(float* data)> writer) -> void;
 
 		//
@@ -119,8 +120,8 @@ public:
 		//
 		auto read_sub_buffer(
 			row_t row, 
-			uint32_t frame_beg, 
-			uint32_t frames_to_read, 
+			frame_t frame_beg, 
+			frame_t frames_to_read, 
 			std::function<void(const float* data)> reader) const -> bool;
 
 		//
@@ -129,8 +130,8 @@ public:
 		//
 		auto write_sub_buffer(
 			row_t row, 
-			uint32_t frame_beg, 
-			uint32_t frames_to_write, 
+			frame_t frame_beg, 
+			frame_t frames_to_write, 
 			std::function<void(float* data)> writer) -> bool;
 
 		//
@@ -146,10 +147,10 @@ public:
 
 	private:
 
-		auto get_buffer(uint32_t frame) -> Buffer*;
-		auto get_buffer(uint32_t frame) const -> const Buffer*;
+		auto get_buffer(frame_t frame) -> Buffer*;
+		auto get_buffer(frame_t frame) const -> const Buffer*;
 
-		static auto get_local_frame(uint32_t frame) -> uint32_t;
+		static auto get_local_frame(frame_t frame) -> frame_t;
 
 		HaroldBuffer* const SELF;
 		bool buffer_dirt_flag_{};
@@ -163,7 +164,7 @@ public:
 	{
 	public:
 
-		GuiAccess(HaroldBuffer* self, uint32_t required_size);
+		GuiAccess(HaroldBuffer* self, frame_t required_size);
 
 		// The required size requested by the client
 		auto get_size() const { return size_; }
@@ -209,7 +210,7 @@ public:
 		// the requested size (in which case you should throw
 		// this Harold buffer away and create a new one of the
 		// required size
-		auto resize(uint32_t required_size) -> bool;
+		auto resize(frame_t required_size) -> bool;
 
 		// Read final generated mipmap data
 		auto read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame;
@@ -219,13 +220,13 @@ public:
 
 		HaroldBuffer* const SELF;
 		int allocated_buffers_{};
-		uint32_t size_{};
+		frame_t size_{};
 	} gui;
 
 private:
 
 	buffer_pool_t* buffer_pool_;
-	uint32_t actual_size_{};
+	frame_t actual_size_{};
 
 	auto acquire_buffers(row_t row_count) -> void;
 
@@ -236,7 +237,7 @@ private:
 };
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, uint32_t required_size)
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, frame_t required_size)
 	: gui { this, required_size }
 	, buffer_pool_{ buffer_pool }
 {
@@ -271,13 +272,13 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::acquire_buffers(row_t
 // Audio thread
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_local_frame(uint32_t frame) -> uint32_t
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_local_frame(frame_t frame) -> frame_t
 {
 	return frame % SUB_BUFFER_SIZE;
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_buffer(uint32_t frame) -> Buffer*
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_buffer(frame_t frame) -> Buffer*
 {
 	if (frame >= SELF->actual_size_) return {};
 
@@ -293,13 +294,13 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_buff
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_buffer(uint32_t frame) const -> const Buffer*
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::get_buffer(frame_t frame) const -> const Buffer*
 {
 	return const_cast<HaroldBuffer::AudioAccess*>(this)->get_buffer(frame);
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read(row_t row, uint32_t frame) const -> float
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame) const -> float
 {
 	auto buffer{ get_buffer(frame) };
 
@@ -311,9 +312,9 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read(row
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read_aligned(
 	row_t row, 
-	uint32_t frame_beg, 
-	uint32_t frames_to_read, 
-	uint32_t chunk_size, 
+	frame_t frame_beg, 
+	frame_t frames_to_read, 
+	frame_t chunk_size, 
 	::std::function<void(const float* data)> reader,
 	::std::function<void()> chunk_not_ready) const -> void
 {
@@ -334,7 +335,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read_ali
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write(row_t row, uint32_t frame, float value) -> void
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write(row_t row, frame_t frame, float value) -> void
 {
 	auto buffer{ get_buffer(frame) };
 
@@ -348,8 +349,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write(ro
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read_sub_buffer(
 	row_t row, 
-	uint32_t frame_beg, 
-	uint32_t frames_to_read, 
+	frame_t frame_beg, 
+	frame_t frames_to_read, 
 	::std::function<void(const float* data)> reader) const -> bool
 {
 	assert((frame_beg / SUB_BUFFER_SIZE) == ((frame_beg + (frames_to_read - 1)) / SUB_BUFFER_SIZE));
@@ -366,8 +367,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::read_sub
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write_sub_buffer(
 	row_t row, 
-	uint32_t frame_beg, 
-	uint32_t frames_to_write, 
+	frame_t frame_beg, 
+	frame_t frames_to_write, 
 	::std::function<void(float* data)> writer) -> bool
 {
 	assert((frame_beg / SUB_BUFFER_SIZE) == ((frame_beg + (frames_to_write - 1)) / SUB_BUFFER_SIZE));
@@ -386,9 +387,9 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write_su
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write_aligned(
 	row_t row, 
-	uint32_t frame_beg, 
-	uint32_t frames_to_write, 
-	uint32_t chunk_size, 
+	frame_t frame_beg, 
+	frame_t frames_to_write, 
+	frame_t chunk_size, 
 	::std::function<void(float* data)> writer) -> void
 {
 	auto frames_remaining{ frames_to_write };
@@ -436,7 +437,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::AudioAccess::write_mi
 // GUI thread
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::GuiAccess(HaroldBuffer* self, uint32_t required_size)
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::GuiAccess(HaroldBuffer* self, frame_t required_size)
 	: SELF{ self }
 	, size_{ required_size }
 {
@@ -458,7 +459,7 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::is_ready()
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::resize(uint32_t required_size) -> bool
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::resize(frame_t required_size) -> bool
 {
 	if (required_size > SELF->actual_size_) return false;
 
@@ -521,8 +522,8 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::generate_m
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
 auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame
 {
-	const auto index_a{ static_cast<uint32_t>(std::floor(frame)) };
-	const auto index_b{ static_cast<uint32_t>(std::ceil(frame)) };
+	const auto index_a{ static_cast<frame_t>(std::floor(frame)) };
+	const auto index_b{ static_cast<frame_t>(std::ceil(frame)) };
 	const auto t{ frame - index_a };
 
 	const auto buffer_index_a{ index_a / SUB_BUFFER_SIZE };

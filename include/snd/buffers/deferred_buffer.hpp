@@ -14,6 +14,7 @@ public:
 	static constexpr auto SIZE{ SIZE_ };
 
 	using row_t = uint16_t;
+	using index_t = uint64_t;
 
 	DeferredBuffer(row_t row_count = 1)
 		: row_count_{ row_count }
@@ -31,7 +32,7 @@ public:
 		}
 	}
 
-	auto read(row_t row, size_t index) const -> float
+	auto read(row_t row, index_t index) const -> float
 	{
 		assert(is_ready());
 		assert(row < row_count_);
@@ -39,7 +40,7 @@ public:
 		return rows_[row][index];
 	}
 
-	auto read(row_t row, size_t index_beg, std::function<void(const Value*)> reader) const -> void
+	auto read(row_t row, index_t index_beg, std::function<void(const Value*)> reader) const -> void
 	{
 		assert(is_ready());
 		assert(row < row_count_);
@@ -47,7 +48,7 @@ public:
 		reader(&(rows_[row][index_beg]));
 	}
 
-	auto write(row_t row, size_t index, float value) -> void
+	auto write(row_t row, index_t index, float value) -> void
 	{
 		assert(is_ready());
 		assert(row < row_count_);
@@ -55,7 +56,7 @@ public:
 		rows_[row][index] = value;
 	}
 
-	auto write(row_t row, size_t index_beg, std::function<void(Value* value)> writer) -> void
+	auto write(row_t row, index_t index_beg, std::function<void(Value* value)> writer) -> void
 	{
 		assert(is_ready());
 		assert(row < row_count_);
