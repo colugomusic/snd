@@ -177,7 +177,8 @@ public:
 		// Total number of sub buffers which have been allocated
 		auto get_allocated_buffers() const { return allocated_buffers_; }
 
-		// Clear the visual mipmap data
+		// Clear the visual mipmap data. This is fast because it
+		// just marks out a dirty region
 		auto clear_mipmap() -> void;
 
 		// True if all sub buffers have been allocated
