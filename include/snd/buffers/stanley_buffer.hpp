@@ -307,6 +307,8 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::release() -> void
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::GuiAccess::clear_mipmap() -> void
 {
+	if (!mipmap_) return;
+
 	mipmap_->clear();
 }
 
