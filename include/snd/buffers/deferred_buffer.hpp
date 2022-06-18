@@ -31,6 +31,11 @@ public:
 			rows_[row].resize(SIZE);
 		}
 	}
+	
+	auto fill(row_t row, float value) -> void
+	{
+		std::fill(rows_[row].begin(), rows_[row].end(), value);
+	}
 
 	auto read(row_t row, index_t index) const -> float
 	{
