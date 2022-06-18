@@ -223,6 +223,39 @@ public:
 		frame_t size_{};
 	} gui;
 
+	//
+	// A separate worker thread can read the audio buffer
+	// though this interface
+	//
+	class WorkerAccess
+	{
+	public:
+
+		WorkerAccess(AudioAccess* audio_access);
+
+		// We are not going to do any synchronization here
+		// for the client.
+		//
+		// Calling this while the audio thread is writing
+		// is ok as long as the audio thread is writing to
+		// a different part of the buffer.
+		//
+		// It is the client's responsibility to coordinate
+		// this
+		auto read(row_t row, frame_t frame) const -> float;
+		auto read_aligned(
+			row_t row, 
+			frame_t frame_beg, 
+			frame_t frames_to_read, 
+			frame_t chunk_size, 
+			std::function<void(const float* data)> reader,
+			std::function<void()> chunk_not_ready) const -> void;
+
+	private:
+
+		AudioAccess* const audio_access_;
+	} worker{ &audio };
+
 private:
 
 	buffer_pool_t* buffer_pool_;
@@ -542,6 +575,33 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::GuiAccess::read_mipma
 	const auto frame_b{ buffer_b.gui.read_mipmap(row, local_frame_b, bin_size) };
 
 	return snd::SampleMipmap::LODFrame::lerp(frame_a, frame_b, t);
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Worker thread
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::WorkerAccess::WorkerAccess(AudioAccess* audio_access)
+	: audio_access_{ audio_access }
+{
+}
+
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::WorkerAccess::read(row_t row, frame_t frame) const -> float
+{
+	return audio_access_->read(row, frame);
+}
+
+template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::WorkerAccess::read_aligned(
+	row_t row, 
+	frame_t frame_beg, 
+	frame_t frames_to_read, 
+	frame_t chunk_size, 
+	::std::function<void(const float* data)> reader,
+	::std::function<void()> chunk_not_ready) const -> void
+{
+	return audio_access_->read_aligned(row, frame_beg, frames_to_read, chunk_size, reader, chunk_not_ready);
 }
 
 } // snd
