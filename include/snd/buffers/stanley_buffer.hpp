@@ -61,7 +61,7 @@ public:
 		AudioAccess(StanleyBuffer* self);
 
 		auto read(row_t row, frame_t frame) const -> float;
-		auto read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> bool;
+		auto read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void;
 		auto write(row_t row, frame_t frame, float value) -> void;
 		auto write(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(float* value)> writer) -> void;
 
@@ -107,6 +107,32 @@ public:
 		std::unique_ptr<snd::SampleMipmap> mipmap_;
 	} gui;
 
+	//
+	// A separate worker thread can read the audio buffer though here
+	//
+	class WorkerAccess
+	{
+	public:
+
+		WorkerAccess(AudioAccess* audio_access);
+
+		// We are not going to do any synchronization here
+		// for the client.
+		//
+		// Calling this while the audio thread is writing
+		// is ok as long as the audio thread is writing to
+		// a different part of the buffer.
+		//
+		// It is the client's responsibility to coordinate
+		// this
+		auto read(row_t row, frame_t frame) const -> float;
+		auto read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void;
+
+	private:
+		
+		AudioAccess* const audio_access_;
+	} worker{ &audio };
+
 	const row_t row_count;
 
 	StanleyBuffer(row_t row_count_);
@@ -129,16 +155,6 @@ private:
 		// before the audio thread starts accessing it
 		//
 		DeferredBuffer<float, SIZE, Allocator> buffer;
-
-		//
-		// This region is read and written by the audio thread
-		//
-		// It is also written by the GUI thread once in gui.release()
-		// 
-		// The audio thread should have finished accessing this data
-		// by the time gui.release() is called
-		//
-		snd::SampleMipmap::Region readable_region{ EMPTY_REGION };
 
 		//
 		// Other synchronization happens via beach ball
@@ -186,11 +202,6 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame)
 {
 	assert(SELF->is_ready());
 
-	const auto readable_region{ SELF->critical_.readable_region };
-
-	if (readable_region.beg >= readable_region.end) return 0.0f;
-	if (frame < readable_region.beg || frame >= readable_region.end) return 0.0f;
-
 	return SELF->critical_.buffer.read(row, frame);
 }
 
@@ -203,24 +214,15 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, frame_t frame
 
 	if (frame < dirty_region_.beg) dirty_region_.beg = frame;
 	if (frame >= dirty_region_.end) dirty_region_.end = frame + 1;
-	if (frame < SELF->critical_.readable_region.beg) SELF->critical_.readable_region.beg = frame;
-	if (frame >= SELF->critical_.readable_region.end) SELF->critical_.readable_region.end = frame + 1;
 }
 
 template <size_t SIZE, class Allocator>
-auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> bool
+auto StanleyBuffer<SIZE, Allocator>::AudioAccess::read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void
 {
 	assert(SELF->is_ready());
 	assert(row < SELF->row_count);
 
-	const auto readable_region{ SELF->critical_.readable_region };
-
-	if (readable_region.beg >= readable_region.end) return false;
-	if (frame_beg < readable_region.beg || frame_beg + frame_count >= readable_region.end) return false;
-
 	SELF->critical_.buffer.read(row, frame_beg, reader);
-
-	return true;
 }
 
 template <size_t SIZE, class Allocator>
@@ -233,8 +235,6 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::write(row_t row, frame_t frame
 
 	if (frame_beg < dirty_region_.beg) dirty_region_.beg = frame_beg;
 	if (frame_beg + frame_count >= dirty_region_.end) dirty_region_.end = frame_beg + frame_count;
-	if (frame_beg < SELF->critical_.readable_region.beg) SELF->critical_.readable_region.beg = frame_beg;
-	if (frame_beg + frame_count >= SELF->critical_.readable_region.end) SELF->critical_.readable_region.end = frame_beg + frame_count;
 }
 
 template <size_t SIZE, class Allocator>
@@ -284,6 +284,7 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::allocate() -> bool
 
 		for (row_t row{}; row < SELF->row_count; row++)
 		{
+			SELF->critical_.buffer.fill(row, 0.0f);
 			SELF->critical_.beach.mipmap.staging_buffers[row].resize(SIZE);
 		}
 
@@ -300,7 +301,11 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::allocate() -> bool
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::GuiAccess::release() -> void
 {
-	SELF->critical_.readable_region = EMPTY_REGION;
+	for (row_t row{}; row < SELF->row_count; row++)
+	{
+		SELF->critical_.buffer.fill(row, 0.0f);
+	}
+
 	SELF->critical_.beach.mipmap.dirty_region = EMPTY_REGION;
 }
 
@@ -353,6 +358,27 @@ auto StanleyBuffer<SIZE, Allocator>::GuiAccess::read_mipmap(row_t row, frame_t f
 	if (!mipmap_) return snd::SampleMipmap::SILENT_FRAME;
 
 	return mipmap_->read(mipmap_->bin_size_to_lod(bin_size), row, float(frame));
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Worker thread
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+template <size_t SIZE, class Allocator>
+StanleyBuffer<SIZE, Allocator>::WorkerAccess::WorkerAccess(AudioAccess* audio_access)
+	: audio_access_{ audio_access }
+{
+}
+
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::WorkerAccess::read(row_t row, frame_t frame) const -> float
+{
+	return audio_access_->read(row, frame);
+}
+
+template <size_t SIZE, class Allocator>
+auto StanleyBuffer<SIZE, Allocator>::WorkerAccess::read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void
+{
+	return audio_access_->read(row, frame_beg, frame_count, reader);
 }
 
 } // snd
