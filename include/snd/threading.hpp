@@ -108,7 +108,7 @@ template <class ObjectID = int64_t> struct ObjectTask
 template <class ObjectID, int PROCESS_THREAD>
 class ObjectDeletionTaskExpiryPolicy
 {
-	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
+	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD_>
 	friend class TaskQueue;
 
 public:
@@ -143,7 +143,7 @@ private:
 template <int PROCESS_THREAD>
 class ShutdownExpiryPolicy
 {
-	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
+	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD_>
 	friend class TaskQueue;
 
 public:
@@ -176,7 +176,7 @@ private:
 template <class TaskType>
 class SingleThreadedQueuePolicy
 {
-	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
+	template <class TaskType_, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
 	friend class TaskQueue;
 
 	auto push(TaskType task) -> void
@@ -203,7 +203,7 @@ private:
 template <class TaskType>
 class LockingQueuePolicy
 {
-	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
+	template <class TaskType_, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
 	friend class TaskQueue;
 
 	auto push(TaskType task) -> void
@@ -235,7 +235,7 @@ private:
 template <class TaskType, size_t SIZE>
 class LockFreeQueuePolicy
 {
-	template <class TaskType, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
+	template <class TaskType_, class ExpiryPolicy, class QueuePolicy, int WORKER_THREAD, int PROCESS_THREAD>
 	friend class TaskQueue;
 
 	//
