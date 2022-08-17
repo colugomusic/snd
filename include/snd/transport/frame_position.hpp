@@ -169,7 +169,14 @@ struct DSPVectorArrayFramePosition
 		return *this;
 	}
 
-	DSPVectorArrayFramePosition<ROWS> operator+(std::int64_t v) const
+	DSPVectorArrayFramePosition<ROWS>& operator+=(std::int64_t v)
+	{
+		pos = pos + ml::DSPVectorInt(int32_t(v));
+
+		return *this;
+	}
+
+	DSPVectorArrayFramePosition<ROWS> operator+=(std::int64_t v) const
 	{
 		DSPVectorArrayFramePosition<ROWS> out;
 
