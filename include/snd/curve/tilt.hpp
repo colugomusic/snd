@@ -68,9 +68,9 @@ inline T value(T x, const Spec<T>& spec)
 }
 
 template <class T>
-inline Spec<T> make_spec(float amp, float tilt, Mode mode)
+inline constexpr Spec<T> make_spec(float amp, float tilt, Mode mode)
 {
-	Spec<float> spec;
+	Spec<float> spec{};
 
 	tilt = snd::ease::quadratic::out_in(tilt);
 
