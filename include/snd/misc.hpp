@@ -154,6 +154,15 @@ inline T wrap(T x, T y)
 	return x;
 }
 
+inline size_t wrap(size_t x, size_t y)
+{
+	x = x % y;
+
+	if (x < 0) x += y;
+
+	return x;
+}
+
 inline int wrap(int x, int y)
 {
 	x = x % y;
