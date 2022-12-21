@@ -77,6 +77,31 @@ public:
 
 		ExpiryPolicy::done_processing();
 	}
+
+	template <int THREAD>
+	auto process_some(uint32_t max) -> void
+	{
+		static_assert(THREAD == PROCESS_THREAD);
+
+		TaskType task;
+
+		while (QueuePolicy::pop(&task))
+		{
+			if (ExpiryPolicy::is_expired(task))
+			{
+				continue;
+			}
+
+			task();
+
+			if (--max == 0)
+			{
+				return;
+			}
+		}
+
+		ExpiryPolicy::done_processing();
+	}
 };
 
 class NoExpiryPolicy
