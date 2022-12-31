@@ -5,6 +5,7 @@
 #include <DSP/MLDSPGens.h>
 #pragma warning(pop)
 #include <stupid/stupid.hpp>
+#include <stupid/stupid.hpp>
 
 namespace snd {
 namespace audio {
@@ -22,7 +23,7 @@ public:
 
 	struct Config
 	{
-		stupid::SyncSignal* sync_signal {};
+		stupid::sync_signal* sync_signal {};
 
 		Callbacks callbacks;
 	};
@@ -60,13 +61,13 @@ private:
 		Source source;
 	};
 
-	stupid::QuickSync<SyncData> sync_;
+	stupid::signal_synced_object<SyncData> sync_;
 
 	struct Audio
 	{
-		stupid::AtomicTrigger request_play;
-		stupid::AtomicTrigger request_stop;
-		stupid::AtomicTrigger request_progress;
+		stupid::trigger request_play;
+		stupid::trigger request_stop;
+		stupid::trigger request_progress;
 
 		auto operator()(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>;
 
@@ -106,7 +107,7 @@ inline Player::Player(Config config)
 
 inline auto Player::set_source(Source source) -> void
 {
-	sync_.sync_new([source](SyncData* data) { data->source = source; });
+	sync_.write.set(SyncData{source});
 }
 
 inline auto Player::play() -> void
@@ -126,7 +127,7 @@ inline auto Player::request_progress() -> void
 
 inline auto Player::operator()() -> ml::DSPVectorArray<2>
 {
-	return audio_(static_, sync_.get_data());
+	return audio_(static_, sync_.read.get_value());
 }
 
 inline auto Player::Audio::begin_playing(const Static& static_data, const SyncData& sync_data) -> void

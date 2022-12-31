@@ -71,7 +71,7 @@ public:
 	private:
 
 		StanleyBuffer* const SELF;
-		stupid::BeachBallPlayer<AUDIO> beach_player_;
+		stupid::beach_ball_player<AUDIO> beach_player_;
 		snd::SampleMipmap::Region dirty_region_{};
 	} audio;
 
@@ -103,7 +103,7 @@ public:
 	private:
 
 		StanleyBuffer* const SELF;
-		stupid::BeachBallPlayer<GUI> beach_player_;
+		stupid::beach_ball_player<GUI> beach_player_;
 		std::unique_ptr<snd::SampleMipmap> mipmap_;
 	} gui;
 
@@ -161,7 +161,7 @@ private:
 		//
 		struct
 		{
-			stupid::BeachBall ball{ AUDIO };
+			stupid::beach_ball ball{ AUDIO };
 
 			struct
 			{
