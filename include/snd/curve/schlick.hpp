@@ -8,6 +8,7 @@
 #include "snd/misc.hpp"
 #include "snd/types.hpp"
 #include "snd/ease.hpp"
+#include "curve.hpp"
 
 namespace snd {
 namespace curve {
