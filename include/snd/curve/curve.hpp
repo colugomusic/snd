@@ -43,7 +43,7 @@ auto add_detail(std::list<Vec3> points, ValueFn&& value_fn, typename std::list<V
 
 // Constructs a curved line using a minimal number of straight lines.
 // [beg/end]: specify the segment of the line to construct (beg=0,end=1 would construct the entire line)
-// [value_fn]: should return the value y of the line at any given point x from 0..1
+// [value_fn]: should return the value y (0..1) of the line at any given point x (0..1)
 // [resolution]: basically specifies how detailed the line is. If drawing the line visually, [resolution]
 // should be the rendering area of the line segment in pixels.
 template <typename Vec3, typename ValueFn>
