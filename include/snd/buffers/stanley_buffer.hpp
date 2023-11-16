@@ -258,12 +258,12 @@ auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::read_mipmap(row_t row, f
 
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::SCARY__read(row_t row, frame_t frame) const -> float {
-	return audio_access_->read(row, frame);
+	return audio->read(row, frame);
 }
 
 template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::SCARY__read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void {
-	return audio_access_->read(row, frame_beg, frame_count, reader);
+	return audio->read(row, frame_beg, frame_count, reader);
 }
 
 } // snd
