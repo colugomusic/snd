@@ -136,8 +136,7 @@ struct DSPVectorArrayFramePosition
 	}
 
 	template <size_t ROW = 0>
-	void set(int index, const FramePosition& fp)
-	{
+	void set(int index, const FramePosition& fp) {
 		pos.row(ROW)[index] = fp.get_pos();
 		fract.row(ROW)[index] = fp.get_fract();
 	}
@@ -152,64 +151,56 @@ struct DSPVectorArrayFramePosition
 		return out;
 	}
 
-	DSPVectorArrayFramePosition<ROWS> operator+(std::int32_t v) const
-	{
-		DSPVectorArrayFramePosition<ROWS> out;
-
+	DSPVectorArrayFramePosition<ROWS> operator+(std::int32_t v) const {
+		DSPVectorArrayFramePosition<ROWS> out; 
 		out.pos = pos + ml::DSPVectorInt(v);
-		out.fract = fract;
-
+		out.fract = fract; 
 		return out;
 	}
-
-	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int32_t v)
-	{
-		pos = pos - ml::DSPVectorInt(v);
-
+	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int32_t v) {
+		pos = pos - ml::DSPVectorInt(v); 
 		return *this;
-	}
-
-	DSPVectorArrayFramePosition<ROWS>& operator+=(std::int64_t v)
-	{
-		pos = pos + ml::DSPVectorInt(int32_t(v));
-
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator+=(std::int32_t v) {
+		pos = pos + ml::DSPVectorInt(v); 
 		return *this;
-	}
-
-	DSPVectorArrayFramePosition<ROWS> operator+=(std::int64_t v) const
-	{
-		DSPVectorArrayFramePosition<ROWS> out;
-
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator+=(std::int64_t v) {
+		pos = pos + ml::DSPVectorInt(int32_t(v)); 
+		return *this;
+	} 
+	DSPVectorArrayFramePosition<ROWS> operator+=(std::int64_t v) const {
+		DSPVectorArrayFramePosition<ROWS> out; 
 		out.pos = pos + ml::DSPVectorInt(static_cast<int32_t>(v));
-		out.fract = fract;
-
+		out.fract = fract; 
 		return out;
-	}
-
-	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int64_t v)
-	{
-		pos = pos - ml::DSPVectorInt(static_cast<int32_t>(v));
-
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator-=(std::int64_t v) {
+		pos = pos - ml::DSPVectorInt(static_cast<int32_t>(v)); 
 		return *this;
-	}
-
-	DSPVectorArrayFramePosition<ROWS>& operator*=(float v)
-	{
-		for (int i = 0; i < kFloatsPerDSPVector; i++)
-		{
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator+=(float v) {
+		for (int i = 0; i < kFloatsPerDSPVector; i++) {
+			set(i, double(at(i)) + v);
+		} 
+		return *this;
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator-=(float v) {
+		for (int i = 0; i < kFloatsPerDSPVector; i++) {
+			set(i, double(at(i)) - v);
+		} 
+		return *this;
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator*=(float v) {
+		for (int i = 0; i < kFloatsPerDSPVector; i++) {
 			set(i, double(at(i)) * v);
-		}
-
+		} 
 		return *this;
-	}
-
-	DSPVectorArrayFramePosition<ROWS>& operator/=(float v)
-	{
-		for (int i = 0; i < kFloatsPerDSPVector; i++)
-		{
+	} 
+	DSPVectorArrayFramePosition<ROWS>& operator/=(float v) {
+		for (int i = 0; i < kFloatsPerDSPVector; i++) {
 			set(i, double(at(i)) / v);
-		}
-
+		} 
 		return *this;
 	}
 };
@@ -276,18 +267,13 @@ DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<RO
 }
 
 template <size_t ROWS>
-DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<ROWS>& a, float b)
-{
+DSPVectorArrayFramePosition<ROWS> operator-(const DSPVectorArrayFramePosition<ROWS>& a, float b) {
 	float fractional_part;
-	float int_part;
-
-	fractional_part = std::modf(b, &int_part);
-
-	DSPVectorArrayFramePosition<ROWS> b_vec;
-
+	float int_part; 
+	fractional_part = std::modf(b, &int_part); 
+	DSPVectorArrayFramePosition<ROWS> b_vec; 
 	b_vec.pos = int(int_part);
-	b_vec.fract = fractional_part;
-
+	b_vec.fract = fractional_part; 
 	return a - b_vec;
 }
 
@@ -349,32 +335,25 @@ inline bool FramePosition::operator>=(const FramePosition& rhs) const
 	return false;
 }
 
-inline bool FramePosition::operator<(std::int32_t rhs) const
-{
+inline bool FramePosition::operator<(std::int32_t rhs) const {
 	return pos_ < rhs;
 }
 
-inline bool FramePosition::operator<=(std::int32_t rhs) const
-{
+inline bool FramePosition::operator<=(std::int32_t rhs) const {
 	if (pos_ < rhs) return true;
-	if (pos_ == rhs) return fract_ == 0.0f;
-
+	if (pos_ == rhs) return fract_ == 0.0f; 
 	return false;
 }
 
-inline bool FramePosition::operator>(std::int32_t rhs) const
-{
+inline bool FramePosition::operator>(std::int32_t rhs) const {
 	if (pos_ > rhs) return true;
-	if (pos_ == rhs) return fract_ > 0.0f;
-
+	if (pos_ == rhs) return fract_ > 0.0f; 
 	return false;
 }
 
-inline bool FramePosition::operator>=(std::int32_t rhs) const
-{
+inline bool FramePosition::operator>=(std::int32_t rhs) const {
 	if (pos_ > rhs) return true;
-	if (pos_ == rhs) return fract_ >= 0.0f;
-
+	if (pos_ == rhs) return fract_ >= 0.0f; 
 	return false;
 }
 
