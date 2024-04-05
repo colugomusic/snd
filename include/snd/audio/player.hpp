@@ -120,12 +120,12 @@ auto begin_stopping(impl::stream_player_t* impl) -> void {
 
 inline
 auto begin_playing(impl::stream_player_t* impl) -> void {
-	impl->audio.state = audio_t::state_t::playing;
-	impl->audio.progress = 0;
-	impl->audio.position = impl->audio.source.start_position;
+	impl->audio.state            = audio_t::state_t::playing;
+	impl->audio.source           = impl->audio.play_requested->source;
+	impl->audio.position         = impl->audio.source.start_position;
+	impl->audio.progress         = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
 	impl->audio.frames_requested = false;
-	impl->audio.source         = impl->audio.play_requested->source;
-	impl->audio.play_requested = std::nullopt;
+	impl->audio.play_requested   = std::nullopt;
 }
 
 inline
@@ -247,8 +247,8 @@ auto receive(impl::stream_player_t* impl, from_audio::progress msg) -> void {
 
 inline
 auto receive(impl::stream_player_t* impl, from_audio::stopped) -> void {
-	impl->main.listener->on_stopped();
 	impl->main.is_playing = false;
+	impl->main.listener->on_stopped();
 }
 
 inline
