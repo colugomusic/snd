@@ -1,292 +1,311 @@
 #pragma once
 
+#ifdef SND_WITH_MOODYCAMEL
+
+#include "../threading.hpp"
+#include <optional>
+#include <variant>
 #pragma warning(push, 0)
 #include <DSP/MLDSPBuffer.h>
 #include <DSP/MLDSPGens.h>
 #pragma warning(pop)
-#include <stupid/stupid.hpp>
 
 namespace snd {
 namespace audio {
 
-class Player
-{
-public:
+namespace impl { struct stream_player_t; }
 
-	struct Callbacks
-	{
-		std::function<void()> stopped;
-		std::function<void()> request_more_frames;
-		std::function<void(float)> return_progress;
+struct stream_player {
+	struct listener_t {
+		virtual ~listener_t() = default;
+		virtual auto on_stopped() -> void = 0;
+		virtual auto on_more_frames_needed() -> void = 0;
+		virtual auto on_progress(float) -> void = 0;
 	};
-
-	struct Config
-	{
-		stupid::sync_signal* sync_signal {};
-
-		Callbacks callbacks;
-	};
-
-	struct Source
-	{
-		int SR {};
-		ml::DSPBuffer* buffer {};
-
+	struct source_t {
 		// number of frames after SR conversion, not necessarily
 		// equal to the number of frames in the file
-		std::uint64_t num_frames {};
-		std::uint64_t start_position {};
-		int num_channels {};
+		std::uint64_t num_frames     = 0;
+		std::uint64_t start_position = 0;
+		int num_channels             = 0;
+		int SR                       = 0;
 	};
-
-	Player(Config config);
-
-	auto set_source(Source source) -> void;
-	auto play() -> void;
-	auto stop() -> void;
-	auto request_progress() -> void;
-	
-	auto operator()() -> ml::DSPVectorArray<2>;
-
+	stream_player(ml::DSPBuffer* source_buffer, std::unique_ptr<listener_t>&& listener, th::message_queue_reporter reporter);
+	[[nodiscard]] auto audio__process() -> ml::DSPVectorArray<2>;
+	auto main__is_playing() const -> bool;
+	auto main__play(source_t source) -> void;
+	auto main__stop() -> void;
+	auto main__ui_frame() -> void;
 private:
-
-	struct Static
-	{
-		Callbacks callbacks;
-	} static_;
-
-	struct SyncData
-	{
-		Source source;
-	};
-
-	stupid::signal_synced_object<SyncData> sync_;
-
-	struct Audio
-	{
-		stupid::trigger request_play;
-		stupid::trigger request_stop;
-		stupid::trigger request_progress;
-
-		auto operator()(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>;
-
-	private:
-
-		auto play(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>;
-		auto stop(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>;
-
-		auto update_state(const Static& static_data, const SyncData& sync_data) -> void;
-		auto begin_stopping(const Static& static_data, const SyncData& sync_data) -> void;
-		auto begin_playing(const Static& static_data, const SyncData& sync_data) -> void;
-		auto finish_playing(const Static& static_data) -> void;
-
-		static constexpr auto FADEOUT_MS { 100.f };
-
-		enum class State { Playing, Stopping, Stopped } state_ { State::Stopped };
-
-		std::uint64_t position_ {};
-		std::uint32_t frames_available_ {};
-		bool frames_requested_ {};
-		float progress_ {};
-		float amp_ { 1.0f };
-
-		struct FadeOut
-		{
-			int vectors_total {};
-			int vectors_remaining {};
-		} fadeout_;
-	} audio_;
+	std::unique_ptr<impl::stream_player_t> impl;
 };
 
-inline Player::Player(Config config)
-	: sync_ { *config.sync_signal }
-	, static_ { config.callbacks }
-{
+namespace impl {
+
+static constexpr auto INITIAL_QUEUE_SIZE = 10;
+
+namespace from_audio {
+
+struct i_need_more_frames {};
+struct progress { float value; };
+struct stopped {};
+
+using message = std::variant<i_need_more_frames, progress, stopped>;
+using message_q = th::message_queue<INITIAL_QUEUE_SIZE, message>;
+
+} // from_audio
+
+namespace from_main {
+
+struct get_progress {};
+struct play { stream_player::source_t source; };
+struct stop {};
+
+using message = std::variant<get_progress, play, stop>;
+using message_q = th::message_queue<INITIAL_QUEUE_SIZE, message>;
+
+} // from_main
+
+struct audio_t {
+	enum class state_t { playing, stopping, stopped };
+	struct fadeout_t {
+		int vectors_total     = 0;
+		int vectors_remaining = 0;
+	};
+	fadeout_t fadeout;
+	stream_player::source_t source;
+	th::message_queue_reporter reporter;
+	std::optional<from_main::play> play_requested;
+	ml::DSPBuffer* source_buffer = nullptr;
+	state_t state                = state_t::stopped;
+	uint64_t position            = 0;
+	uint32_t frames_available    = 0;
+	bool frames_requested        = false;
+	float progress               = 0.0f;
+	float amp                    = 1.0f;
+};
+
+struct critical_t {
+	from_audio::message_q msgs_from_audio;
+	from_main::message_q msgs_from_main;
+};
+
+struct main_t {
+	std::unique_ptr<stream_player::listener_t> listener;
+	bool is_playing = false;
+};
+
+struct stream_player_t {
+	audio_t audio;
+	critical_t critical;
+	main_t main;
+};
+
+namespace audio {
+
+static constexpr auto FADEOUT_MS = 100.f;
+
+inline
+auto send(impl::stream_player_t* impl, from_audio::message msg) -> void {
+	th::realtime::send(&impl->critical.msgs_from_audio, std::move(msg), impl->audio.reporter);
 }
 
-inline auto Player::set_source(Source source) -> void
-{
-	sync_.write.set(SyncData{source});
+inline
+auto begin_stopping(impl::stream_player_t* impl) -> void {
+	const auto fadeout_frames = float(impl->audio.source.SR) * (FADEOUT_MS / 1000);
+	impl->audio.fadeout.vectors_total = int(fadeout_frames / kFloatsPerDSPVector);
+	impl->audio.fadeout.vectors_remaining = impl->audio.fadeout.vectors_total;
+	impl->audio.state = audio_t::state_t::stopping;
 }
 
-inline auto Player::play() -> void
-{
-	audio_.request_play();
+inline
+auto begin_playing(impl::stream_player_t* impl) -> void {
+	impl->audio.state = audio_t::state_t::playing;
+	impl->audio.progress = 0;
+	impl->audio.position = impl->audio.source.start_position;
+	impl->audio.frames_requested = false;
+	impl->audio.source         = impl->audio.play_requested->source;
+	impl->audio.play_requested = std::nullopt;
 }
 
-inline auto Player::stop() -> void
-{
-	audio_.request_stop();
+inline
+auto finish_playing(impl::stream_player_t* impl) -> void {
+	impl->audio.state = audio_t::state_t::stopped;
+	send(impl, from_audio::stopped{});
 }
 
-inline auto Player::request_progress() -> void
-{
-	audio_.request_progress();
-}
-
-inline auto Player::operator()() -> ml::DSPVectorArray<2>
-{
-	return audio_(static_, sync_.read.get_value());
-}
-
-inline auto Player::Audio::begin_playing(const Static& static_data, const SyncData& sync_data) -> void
-{
-	state_ = Audio::State::Playing;
-	progress_ = 0;
-	position_ = sync_data.source.start_position;
-	frames_requested_ = false;
-}
-
-inline auto Player::Audio::begin_stopping(const Static& static_data, const SyncData& sync_data) -> void
-{
-	const auto fadeout_frames { float(sync_data.source.SR) * (FADEOUT_MS / 1000) };
-
-	fadeout_.vectors_total = int(fadeout_frames / kFloatsPerDSPVector);
-	fadeout_.vectors_remaining = fadeout_.vectors_total;
-
-	state_ = Audio::State::Stopping;
-}
-
-inline auto Player::Audio::update_state(const Static& static_data, const SyncData& sync_data) -> void
-{
-	switch (state_)
-	{
-		case Audio::State::Playing:
-		{
-			if (request_stop)
-			{
-				begin_stopping(static_data, sync_data);
-			}
-
-			return;
-		}
-
-		case Audio::State::Stopping:
-		{
-			if (fadeout_.vectors_remaining <= 0)
-			{
-				finish_playing(static_data);
-			}
-
-			return;
-		}
-
-		case Audio::State::Stopped:
-		{
-			if (request_stop)
-			{
-				finish_playing(static_data);
-				return;
-			}
-
-			if (request_play)
-			{
-				begin_playing(static_data, sync_data);
-			}
-
-			return;
-		}
-
-		default: return;
-	}
-}
-
-inline auto Player::Audio::finish_playing(const Static& static_data) -> void
-{
-	state_ = State::Stopped;
-	static_data.callbacks.stopped();
-}
-
-inline auto Player::Audio::play(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>
-{
+[[nodiscard]] inline
+auto play(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
 	ml::DSPVectorArray<2> out;
-
-	const auto samples_available { std::uint32_t(sync_data.source.buffer->getReadAvailable()) };
-	const auto previous_frames_available { frames_available_ };
-	const auto current_frames_available { samples_available / sync_data.source.num_channels };
-
-	if (current_frames_available > previous_frames_available)
-	{
-		frames_requested_ = false;
+	const auto samples_available         =  static_cast<uint32_t>(impl->audio.source_buffer->getReadAvailable());
+	const auto previous_frames_available = impl->audio.frames_available;
+	const auto current_frames_available  = samples_available / impl->audio.source.num_channels;
+	if (current_frames_available > previous_frames_available) {
+		impl->audio.frames_requested = false;
 	}
-
-	if (current_frames_available <= 0)
-	{
-		finish_playing(static_data);
+	if (current_frames_available <= 0) {
+		finish_playing(impl);
 		return out;
 	}
-
-	if (current_frames_available < kFloatsPerDSPVector)
-	{
-		for (int c = 0; c < sync_data.source.num_channels; c++)
-		{
-			sync_data.source.buffer->read(out.row(c).getBuffer(), current_frames_available);
+	if (current_frames_available < kFloatsPerDSPVector) {
+		for (int c = 0; c < impl->audio.source.num_channels; c++) {
+			impl->audio.source_buffer->read(out.row(c).getBuffer(), current_frames_available);
 		}
-
-		position_ += current_frames_available;
-		progress_ = float(position_) / (sync_data.source.num_frames - 1);
-
-		finish_playing(static_data);
+		impl->audio.position += current_frames_available;
+		impl->audio.progress = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
+		finish_playing(impl);
 		return out;
 	}
-
-	for (int c = 0; c < sync_data.source.num_channels; c++)
-	{
-		sync_data.source.buffer->read(out.row(c));
+	for (int c = 0; c < impl->audio.source.num_channels; c++) {
+		impl->audio.source_buffer->read(out.row(c));
 	}
-
-	if (sync_data.source.num_channels == 1)
-	{
+	if (impl->audio.source.num_channels == 1) {
 		out.row(1) = out.row(0);
 	}
-
-	position_ += kFloatsPerDSPVector;
-	progress_ = float(position_) / (sync_data.source.num_frames - 1);
-
-	const auto minimum_frames { std::min(std::uint64_t(kFloatsPerDSPVector * 1000), sync_data.source.num_frames) };
-
-	if (!frames_requested_ && (current_frames_available - kFloatsPerDSPVector) < minimum_frames)
-	{
-		static_data.callbacks.request_more_frames();
-		frames_requested_ = true;
+	impl->audio.position += kFloatsPerDSPVector;
+	impl->audio.progress = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
+	const auto minimum_frames = std::min(std::uint64_t(kFloatsPerDSPVector * 1000), impl->audio.source.num_frames);
+	if (!impl->audio.frames_requested && (current_frames_available - kFloatsPerDSPVector) < minimum_frames) {
+		send(impl, from_audio::i_need_more_frames{});
+		impl->audio.frames_requested = true;
 	}
-
-	frames_available_ = current_frames_available;
-
+	impl->audio.frames_available = current_frames_available;
 	return out;
 }
 
-inline auto Player::Audio::stop(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>
-{
-	const auto fadeout_frames { fadeout_.vectors_total * kFloatsPerDSPVector };
-	const auto x { (((ml::kUnityRampVec - 1.0f) * kFloatsPerDSPVector) + float(kFloatsPerDSPVector * (fadeout_.vectors_total - fadeout_.vectors_remaining))) / float(fadeout_frames) };
-	const auto amp { 1.0f - x };
-
-	fadeout_.vectors_remaining--;
-
-	return play(static_data, sync_data) * ml::repeatRows<2>(amp);
+[[nodiscard]] inline
+auto stop(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
+	const auto fadeout_frames = impl->audio.fadeout.vectors_total * kFloatsPerDSPVector;
+	const auto x = (((ml::kUnityRampVec - 1.0f) * kFloatsPerDSPVector) + float(kFloatsPerDSPVector * (impl->audio.fadeout.vectors_total - impl->audio.fadeout.vectors_remaining))) / float(fadeout_frames);
+	const auto amp = 1.0f - x;
+	impl->audio.fadeout.vectors_remaining--;
+	const auto out = play(impl) * ml::repeatRows<2>(amp);
+	if (impl->audio.fadeout.vectors_remaining <= 0) {
+		finish_playing(impl);
+	}
+	return out;
 }
 
-inline auto Player::Audio::operator()(const Static& static_data, const SyncData& sync_data) -> ml::DSPVectorArray<2>
-{
-	update_state(static_data, sync_data);
+inline
+auto receive(impl::stream_player_t* impl, from_main::get_progress) -> void {
+	send(impl, from_audio::progress{impl->audio.progress});
+}
 
+inline
+auto receive(impl::stream_player_t* impl, from_main::play msg) -> void {
+	impl->audio.play_requested = msg;
+	if (impl->audio.state == audio_t::state_t::stopped) {
+		begin_playing(impl);
+		return;
+	}
+	if (impl->audio.state == audio_t::state_t::playing) {
+		begin_stopping(impl);
+		return;
+	}
+}
+
+inline
+auto receive(impl::stream_player_t* impl, from_main::stop) -> void {
+	if (impl->audio.state == audio_t::state_t::playing) {
+		begin_stopping(impl);
+		return;
+	}
+}
+
+inline
+auto receive_msgs(impl::stream_player_t* impl) -> void {
+	th::receive(&impl->critical.msgs_from_main, [impl](const from_main::message& msg) {
+		std::visit([impl](auto&& msg) { receive(impl, msg); }, msg);
+	});
+}
+
+[[nodiscard]] inline
+auto process(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
+	receive_msgs(impl);
 	ml::DSPVectorArray<2> out;
-
-	switch(state_)
-	{
-		case State::Playing: out = play(static_data, sync_data); break;
-		case State::Stopping: out = stop(static_data, sync_data); break;
-		case State::Stopped: default: out = ml::DSPVectorArray<2>(); break;
+	switch(impl->audio.state) {
+		case audio_t::state_t::playing: out = play(impl); break;
+		case audio_t::state_t::stopping: out = stop(impl); break;
+		case audio_t::state_t::stopped: default: out = ml::DSPVectorArray<2>(); break;
 	}
-
-	if (request_progress)
-	{
-		static_data.callbacks.return_progress(progress_);
-	}
-
 	return out;
 }
 
 } // audio
+
+namespace main {
+
+inline
+auto receive(impl::stream_player_t* impl, from_audio::i_need_more_frames) -> void {
+	impl->main.listener->on_more_frames_needed();
+}
+
+inline
+auto receive(impl::stream_player_t* impl, from_audio::progress msg) -> void {
+	impl->main.listener->on_progress(msg.value);
+}
+
+inline
+auto receive(impl::stream_player_t* impl, from_audio::stopped) -> void {
+	impl->main.listener->on_stopped();
+	impl->main.is_playing = false;
+}
+
+inline
+auto receive_msgs(impl::stream_player_t* impl) -> void {
+	th::receive(&impl->critical.msgs_from_audio, [impl](const from_audio::message& msg) {
+		std::visit([impl](auto&& msg) { receive(impl, msg); }, msg);
+	});
+}
+
+inline
+auto send(impl::stream_player_t* impl, from_main::message msg) -> void {
+	th::non_realtime::send(&impl->critical.msgs_from_main, std::move(msg));
+}
+
+inline
+auto is_playing(const impl::stream_player_t& impl) -> bool {
+	return impl.main.is_playing;
+}
+
+inline
+auto play(impl::stream_player_t* impl, stream_player::source_t source) -> void {
+	send(impl, from_main::play{source});
+	impl->main.is_playing = true;
+}
+
+inline
+auto stop(impl::stream_player_t* impl) -> void {
+	if (!is_playing(*impl)) { return; }
+	send(impl, from_main::stop{});
+}
+
+inline
+auto ui_frame(impl::stream_player_t* impl) -> void {
+	if (!is_playing(*impl)) { return; }
+	send(impl, from_main::get_progress{});
+	receive_msgs(impl);
+}
+
+} // main
+
+} // impl
+
+stream_player::stream_player(ml::DSPBuffer* source_buffer, std::unique_ptr<listener_t>&& listener, th::message_queue_reporter reporter)
+	: impl { std::make_unique<impl::stream_player_t>() }
+{
+	impl->audio.reporter = reporter;
+	impl->audio.source_buffer = source_buffer;
+	impl->main.listener = std::move(listener);
+}
+
+auto stream_player::audio__process() -> ml::DSPVectorArray<2>   { return impl::audio::process(this->impl.get()); } 
+auto stream_player::main__is_playing() const -> bool            { return impl::main::is_playing(*this->impl); }
+auto stream_player::main__play(stream_player::source_t source) -> void { return impl::main::play(this->impl.get(), source); } 
+auto stream_player::main__stop() -> void                        { return impl::main::stop(this->impl.get()); } 
+auto stream_player::main__ui_frame() -> void                    { return impl::main::ui_frame(this->impl.get()); }
+
+} // audio
 } // snd
+
+#endif // SND_WITH_MOODYCAMEL
