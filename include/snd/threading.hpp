@@ -24,14 +24,14 @@ struct message_queue {
 namespace realtime {
 
 template <size_t INITIAL_QUEUE_SIZE, typename T>
-auto send(message_queue<INITIAL_QUEUE_SIZE, T>* q, T&& value, const message_queue_reporter& reporter) -> void {
+auto send(message_queue<INITIAL_QUEUE_SIZE, T>* q, const T& value, const message_queue_reporter& reporter) -> void {
 	if (!q->q.try_enqueue(value)) {
 		if (q->q.size_approx() > WORRISOME_QUEUE_SIZE<INITIAL_QUEUE_SIZE>) {
 			reporter.error_queue_beyond_reasonable_size();
 			return;
 		}
 		reporter.warning_queue_full();
-		q->q.enqueue(std::forward<T>(value));
+		q->q.enqueue(value);
 	}
 }
 
@@ -40,8 +40,8 @@ auto send(message_queue<INITIAL_QUEUE_SIZE, T>* q, T&& value, const message_queu
 namespace non_realtime {
 
 template <size_t INITIAL_QUEUE_SIZE, typename T>
-auto send(message_queue<INITIAL_QUEUE_SIZE, T>* q, T&& value) -> void {
-	q->q.enqueue(std::forward<T>(value));
+auto send(message_queue<INITIAL_QUEUE_SIZE, T>* q, const T& value) -> void {
+	q->q.enqueue(value);
 }
 
 } // non_realtime
