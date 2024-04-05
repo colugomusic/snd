@@ -5,7 +5,6 @@
 #include <DSP/MLDSPGens.h>
 #pragma warning(pop)
 #include <stupid/stupid.hpp>
-#include <stupid/stupid.hpp>
 
 namespace snd {
 namespace audio {
