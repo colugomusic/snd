@@ -9,6 +9,7 @@
 #include <atomic>
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <vector>
 #include <stupid/stupid.hpp>
 #include <snd/buffers/deferred_buffer.hpp>
