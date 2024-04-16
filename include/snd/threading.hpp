@@ -54,6 +54,16 @@ auto receive(message_queue<INITIAL_QUEUE_SIZE, T>* q, ReceiveFn&& receive) -> vo
 	}
 }
 
+template <size_t INITIAL_QUEUE_SIZE, typename T, typename ReceiveFn>
+auto receive_one(message_queue<INITIAL_QUEUE_SIZE, T>* q, ReceiveFn&& receive) -> bool {
+	T msg;
+	if (q->q.try_dequeue(msg)) {
+		receive(msg);
+		return true;
+	}
+	return false;
+}
+
 } // th
 } // snd
 
