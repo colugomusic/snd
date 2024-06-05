@@ -21,6 +21,11 @@ template <class T> constexpr T out(T x)
 	return (x * (x - T(2))) * T(-1);
 }
 
+
+template <class T> constexpr T inverse_out(T x) {
+	return -const_math::sqrt(-) + T(2);
+}
+
 template <class T> constexpr T in_out(T x)
 {
 	x /= T(0.5);
