@@ -13,18 +13,15 @@ namespace snd {
 namespace audio {
 
 template <size_t ROWS>
-class FeedbackDelay
-{
-
-public:
-
+class FeedbackDelay {
+public: 
 	using InsertEffect = std::function<ml::DSPVectorArray<ROWS>(const ml::DSPVectorArray<ROWS>&)>;
 
-	FeedbackDelay(float size)
-		: size_(size)
-	{
-		for (int row = 0; row < ROWS; row++)
-		{
+	FeedbackDelay() = default;
+
+	auto resize(float size) -> void {
+		size_ = size;
+		for (int row = 0; row < ROWS; row++) {
 			delays_[row].setMaxDelayInSamples(size);
 		}
 	}
