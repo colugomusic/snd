@@ -70,6 +70,12 @@ constexpr T inverse_lerp(T a, T b, T x)
 	return (x - a) / (b - a);
 }
 
+template <class T>
+constexpr T midpoint(T a, T b)
+{
+	return (a + b) / T(2);
+}
+
 template <class T> T quadratic_sequence(T step, T start, T n)
 {
 	auto a = T(0.5) * step;
