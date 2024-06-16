@@ -5,7 +5,7 @@
 #endif
 
 #include <cmath>
-#include "third_party/const_math.hpp"
+#include "const_math.hpp"
 
 namespace snd {
 namespace ease {
