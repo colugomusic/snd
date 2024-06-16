@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../const_math.hpp"
+#include "../misc.hpp"
 
 namespace snd {
 namespace osc {
@@ -53,8 +54,8 @@ auto process(Phasor* p, float cycles_per_frame, float sync_in = -1.0f) -> float 
 	const auto steps_per_sample     = cycles_per_frame * PHASOR_STEPS_PER_CYCLE;
 	const auto inc                  = static_cast<uint32_t>(steps_per_sample);
 	const auto prev_phase           = p->phase;
-	update_phase(p, inc, sync_in);
-	update_sync_value(p, prev_phase, inc);
+	detail::update_phase(p, inc, sync_in);
+	detail::update_sync_value(p, prev_phase, inc);
 	return static_cast<float>(p->phase) * PHASOR_CYCLES_PER_STEP;
 }
 
@@ -87,7 +88,7 @@ struct MultiWaveOsc : Oscillator {};
 
 [[nodiscard]] inline
 auto phase_to_sine(float phase) -> float {
-	constexpr auto sqrt2       = static_cast<float>(const_math::sqrt(2.0f));
+	constexpr auto sqrt2       = static_cast<float>(::const_math::sqrt(2.0f));
 	constexpr auto range       = sqrt2 - sqrt2 * sqrt2 * sqrt2 / 6.0f;
 	constexpr auto scale       = 1.0f / range;
 	constexpr auto domain      = sqrt2 * 4.0f;
@@ -110,36 +111,36 @@ auto phase_to_pulse(float phase, float freq, float width) -> float {
 	float dummy;
 	const auto maskV = phase > width;
 	auto pulse = phase > width ? -1.0f : 1.0f;
-	pulse += polyBLEP(phase, freq);
+	pulse += polyblep(phase, freq);
 	const auto down = std::modf(phase - width + 1.0f, &dummy);
-	pulse -= polyBLEP(down, freq);
+	pulse -= polyblep(down, freq);
 	return pulse;
 }
 
 [[nodiscard]] inline
-auto phase_to_saw(float phase, float freq) -> void {
+auto phase_to_saw(float phase, float freq) -> float {
 	const auto saw = phase * 2.0f - 1.0f;
-	return saw - polyBLEP(phase, freq);
+	return saw - polyblep(phase, freq);
 }
 
 [[nodiscard]] inline
 auto phase_to_multiwave(float phase, float freq, float width, float wave) -> float {
-	if (wave < MultiWaveOsc::MULTIWAVE_TRIANGLE) {
+	if (wave < MULTIWAVE_TRIANGLE) {
 		const auto triangle = phase_to_triangle(phase);
 		const auto sine = phase_to_sine(phase); 
-		const auto xfade = math::inverse_lerp(MultiWaveOsc::MULTIWAVE_SINE, MultiWaveOsc::MULTIWAVE_TRIANGLE, wave); 
-		return math::lerp(sine, triangle, xfade);
+		const auto xfade = inverse_lerp(MULTIWAVE_SINE, MULTIWAVE_TRIANGLE, wave); 
+		return lerp(sine, triangle, xfade);
 	} 
-	if (wave < MultiWaveOsc::MULTIWAVE_PULSE) {
+	if (wave < MULTIWAVE_PULSE) {
 		const auto triangle = phase_to_triangle(phase);
 		const auto pulse = phase_to_pulse(phase, freq, width); 
-		const auto xfade = math::inverse_lerp(MultiWaveOsc::MULTIWAVE_TRIANGLE, MultiWaveOsc::MULTIWAVE_PULSE, wave); 
-		return math::lerp(triangle, pulse, xfade);
+		const auto xfade = inverse_lerp(MULTIWAVE_TRIANGLE, MULTIWAVE_PULSE, wave); 
+		return lerp(triangle, pulse, xfade);
 	} 
 	const auto pulse = phase_to_pulse(phase, freq, width);
 	const auto saw = phase_to_saw(phase, freq); 
-	const auto xfade = math::inverse_lerp(MultiWaveOsc::MULTIWAVE_PULSE, MultiWaveOsc::MULTIWAVE_SAW, wave); 
-	return math::lerp(pulse, saw, xfade);
+	const auto xfade = inverse_lerp(MULTIWAVE_PULSE, MULTIWAVE_SAW, wave); 
+	return lerp(pulse, saw, xfade);
 }
 
 [[nodiscard]] inline
@@ -167,36 +168,36 @@ auto process_multiwave_osc(Phasor* p, float freq, float width, float wave, float
 	return phase_to_multiwave(process(p, freq, sync), freq, width, wave);
 }
 
-[[nodiscard]] inline
+inline
 auto process(SineOsc* osc, float freq, float sync = -1.0f) -> float {
 	return osc->value = process_sine_osc(&osc->phasor, freq, sync);
 }
 
-[[nodiscard]] inline
+inline
 auto process(TriangleOsc* osc, float freq, float sync = -1.0f) -> float {
 	return osc->value = process_triangle_osc(&osc->phasor, freq, sync);
 }
 
-[[nodiscard]] inline
+inline
 auto process(PulseOsc* osc, float freq, float width, float sync = -1.0f) -> float {
 	return osc->value = process_pulse_osc(&osc->phasor, freq, width, sync);
 }
 
-[[nodiscard]] inline
+inline
 auto process(SawOsc* osc, float freq, float sync = -1.0f) -> float {
 	return osc->value = process_saw_osc(&osc->phasor, freq, sync);
 }
 
-[[nodiscard]] inline
+inline
 auto process(MultiWaveOsc* osc, float freq, float width, float wave, float sync = -1.0f) -> float {
 	return osc->value = process_multiwave_osc(&osc->phasor, freq, width, wave, sync);
 }
 
-inline auto reset(SineOsc* osc) -> void { reset(osc->phasor); } 
-inline auto reset(TriangleOsc* osc) -> void { reset(osc->phasor); } 
-inline auto reset(PulseOsc* osc) -> void { reset(osc->phasor); }
-inline auto reset(SawOsc* osc) -> void { reset(osc->phasor); }
-inline auto reset(MultiWaveOsc* osc) -> void { reset(osc->phasor); }
+inline auto reset(SineOsc* osc) -> void { reset(&osc->phasor); } 
+inline auto reset(TriangleOsc* osc) -> void { reset(&osc->phasor); } 
+inline auto reset(PulseOsc* osc) -> void { reset(&osc->phasor); }
+inline auto reset(SawOsc* osc) -> void { reset(&osc->phasor); }
+inline auto reset(MultiWaveOsc* osc) -> void { reset(&osc->phasor); }
 
 } // scalar
 } // osc
