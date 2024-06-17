@@ -47,8 +47,8 @@ auto update_phase(Phasor* p, uint32_t inc, Sync sync) -> void {
 
 inline
 auto update_sync_value(Phasor* p, uint32_t prev_phase, uint32_t inc) -> void {
-	if (prev_phase < PHASOR_MIDPOINT && p->phase >= PHASOR_MIDPOINT) {
-		p->sync_out = float(p->phase - PHASOR_MIDPOINT) / inc;
+	if (prev_phase < PHASOR_MIDPOINT_INT && p->phase >= PHASOR_MIDPOINT_INT) {
+		p->sync_out = float(p->phase - PHASOR_MIDPOINT_INT) / inc;
 		return;
 	}
 	p->sync_out = -1.0f;
