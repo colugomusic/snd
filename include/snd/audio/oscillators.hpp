@@ -21,16 +21,28 @@ struct Phasor {
 	float sync_out = -1.0f;
 };
 
+struct Sync {
+	float in = -1.0f;
+	float hardness = -1.0f;
+};
+
+static constexpr inline auto NO_SYNC = Sync{ -1.0f, -1.0f };
+
 namespace detail {
 
 inline
-auto update_phase(Phasor* p, uint32_t inc, float sync_in) -> void {
-	if (sync_in > 0.0f) {
-		p->phase = PHASOR_MIDPOINT_INT + uint32_t(sync_in * inc);
+auto update_phase(Phasor* p, uint32_t inc, Sync sync) -> void {
+	if (sync.in > 0.0f) {
+		if (sync.hardness > 0.0f) {
+			const auto no_sync   = float(p->phase + inc);
+			const auto hard_sync = PHASOR_MIDPOINT + sync.in * inc;
+			p->phase = static_cast<uint32_t>(lerp(no_sync, hard_sync, sync.hardness));
+			return;
+		}
+		p->phase = PHASOR_MIDPOINT_INT + uint32_t(sync.in * inc);
+		return;
 	}
-	else {
-		p->phase += inc;
-	}
+	p->phase += inc;
 }
 
 inline
@@ -50,11 +62,11 @@ auto reset(Phasor* p) -> void {
 }
 
 [[nodiscard]] inline
-auto process(Phasor* p, float cycles_per_frame, float sync_in = -1.0f) -> float {
+auto process(Phasor* p, float cycles_per_frame, Sync sync) -> float {
 	const auto steps_per_sample     = cycles_per_frame * PHASOR_STEPS_PER_CYCLE;
 	const auto inc                  = static_cast<uint32_t>(steps_per_sample);
 	const auto prev_phase           = p->phase;
-	detail::update_phase(p, inc, sync_in);
+	detail::update_phase(p, inc, sync);
 	detail::update_sync_value(p, prev_phase, inc);
 	return static_cast<float>(p->phase) * PHASOR_CYCLES_PER_STEP;
 }
@@ -144,52 +156,52 @@ auto phase_to_multiwave(float phase, float freq, float width, float wave) -> flo
 }
 
 [[nodiscard]] inline
-auto process_sine_osc(Phasor* p, float freq, float sync = -1.0f) -> float {
+auto process_sine_osc(Phasor* p, float freq, Sync sync) -> float {
 	return phase_to_sine(process(p, freq, sync));
 }
 
 [[nodiscard]] inline
-auto process_triangle_osc(Phasor* p, float freq, float sync = -1.0f) -> float {
+auto process_triangle_osc(Phasor* p, float freq, Sync sync) -> float {
 	return phase_to_triangle(process(p, freq, sync));
 }
 
 [[nodiscard]] inline
-auto process_pulse_osc(Phasor* p, float freq, float width, float sync = -1.0f) -> float {
+auto process_pulse_osc(Phasor* p, float freq, float width, Sync sync) -> float {
 	return phase_to_pulse(process(p, freq, sync), freq, width);
 }
 
 [[nodiscard]] inline
-auto process_saw_osc(Phasor* p, float freq, float sync = -1.0f) -> float {
+auto process_saw_osc(Phasor* p, float freq, Sync sync) -> float {
 	return phase_to_saw(process(p, freq, sync), freq);
 }
 
 [[nodiscard]] inline
-auto process_multiwave_osc(Phasor* p, float freq, float width, float wave, float sync = -1.0f) -> float {
+auto process_multiwave_osc(Phasor* p, float freq, float width, float wave, Sync sync) -> float {
 	return phase_to_multiwave(process(p, freq, sync), freq, width, wave);
 }
 
 inline
-auto process(SineOsc* osc, float freq, float sync = -1.0f) -> float {
+auto process(SineOsc* osc, float freq, Sync sync) -> float {
 	return osc->value = process_sine_osc(&osc->phasor, freq, sync);
 }
 
 inline
-auto process(TriangleOsc* osc, float freq, float sync = -1.0f) -> float {
+auto process(TriangleOsc* osc, float freq, Sync sync) -> float {
 	return osc->value = process_triangle_osc(&osc->phasor, freq, sync);
 }
 
 inline
-auto process(PulseOsc* osc, float freq, float width, float sync = -1.0f) -> float {
+auto process(PulseOsc* osc, float freq, float width, Sync sync) -> float {
 	return osc->value = process_pulse_osc(&osc->phasor, freq, width, sync);
 }
 
 inline
-auto process(SawOsc* osc, float freq, float sync = -1.0f) -> float {
+auto process(SawOsc* osc, float freq, Sync sync) -> float {
 	return osc->value = process_saw_osc(&osc->phasor, freq, sync);
 }
 
 inline
-auto process(MultiWaveOsc* osc, float freq, float width, float wave, float sync = -1.0f) -> float {
+auto process(MultiWaveOsc* osc, float freq, float width, float wave, Sync sync) -> float {
 	return osc->value = process_multiwave_osc(&osc->phasor, freq, width, wave, sync);
 }
 
