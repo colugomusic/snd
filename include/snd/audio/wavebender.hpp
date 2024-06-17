@@ -251,7 +251,7 @@ auto apply_smoother(Channel* channel, ml::DSPVector in, float amount) -> ml::DSP
 }
 
 [[nodiscard]] inline
-auto generate_frame(Channel* channel, float input, float smoothed_input, CrossfadeMode mode, int bubble, float spike, float tilt, float pitch, float xfade_size, float mix) -> float {
+auto generate_frame(Channel* channel, float input, float smoothed_input, CrossfadeMode mode, int bubble, float spike, float tilt, float pitch, float xfade_size) -> float {
 	FrameWriteParams write_params; 
 	write_params.bubble = bubble;
 	FrameReadParams read_params; 
