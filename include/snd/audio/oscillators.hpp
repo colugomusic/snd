@@ -32,8 +32,8 @@ namespace detail {
 
 inline
 auto update_phase(Phasor* p, uint32_t inc, Sync sync) -> void {
-	if (sync.in > 0.0f) {
-		if (sync.hardness > 0.0f) {
+	if (sync.in > 0.0f && sync.hardness > 0.0f) {
+		if (sync.hardness < 1.0f) {
 			const auto no_sync   = float(p->phase + inc);
 			const auto hard_sync = PHASOR_MIDPOINT + sync.in * inc;
 			p->phase = static_cast<uint32_t>(lerp(no_sync, hard_sync, sync.hardness));
