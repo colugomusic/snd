@@ -27,6 +27,7 @@ public:
 private:
 
 	BQAP bqap_;
+	bool extern_data_ = false;
 	const BQAP* data_;
 
 	float fbk_val_0_[ROWS];
@@ -70,7 +71,8 @@ static ml::DSPVectorArray<ROWS> omega(float sr, const ml::DSPVectorArray<ROWS>& 
 
 template <size_t ROWS>
 Filter_2Pole_Allpass<ROWS>::Filter_2Pole_Allpass(const BQAP* data)
-	: data_(data ? data : &bqap_)
+	: data_{data ? data : &bqap_}
+	, extern_data_{data != nullptr}
 {
 	clear();
 }
@@ -127,7 +129,9 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVec
 template <size_t ROWS>
 ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVectorArray<ROWS>& in, int SR, const ml::DSPVectorArray<ROWS>& freq, const ml::DSPVectorArray<ROWS>& res)
 {
-	if (!data_ && needs_recalc(SR, freq, res)) calculate(SR, freq, res, &bqap_);
+	if (!extern_data_ && needs_recalc(SR, freq, res)) {
+		calculate(SR, freq, res, &bqap_);
+	}
 
 	return this->operator()(in);
 }
