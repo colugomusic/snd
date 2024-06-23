@@ -3,6 +3,7 @@
 #include "dc_bias.hpp"
 #include "../ease.hpp"
 #include "../misc.hpp"
+#include <numeric>
 #include <vector>
 
 namespace snd {
@@ -208,7 +209,7 @@ auto make_context(const poka::work& work, size_t beg, size_t end) -> poka::range
 inline
 auto autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> void {
 	static constexpr auto AUTO_LOSE = 1.0f;
-	static constexpr auto AUTO_WIN  = 0.01f;
+	static constexpr auto AUTO_WIN  = 0.05f;
 	auto& cycle = work->cycles[cycle_idx];
 	float best_diff = std::numeric_limits<float>::max();
 	for (size_t depth = 1; depth < max_depth; depth++) {
@@ -241,11 +242,11 @@ auto autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> vo
 }
 
 inline
-auto remove_dc_bias(poka::work* work) -> void {
+auto remove_dc_bias(poka::work* work, size_t window_size) -> void {
 	audio::dc_bias::detection detection;
 	audio::dc_bias::const_frames const_frames{work->frames.raw.data(), work->frames.raw.size()};
 	audio::dc_bias::frames frames{work->frames.raw.data(), work->frames.raw.size()};
-	audio::dc_bias::detect(const_frames, 2205, &detection);
+	audio::dc_bias::detect(const_frames, window_size, &detection);
 	audio::dc_bias::apply_correction(frames, detection);
 }
 
@@ -313,7 +314,7 @@ auto one_cycle(const poka::work& work, poka::result* out) -> void {
 } // detail
 
 template <typename CB> [[nodiscard]] inline
-auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, result* out) -> bool {
+auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR, result* out) -> bool {
 	out->frames.estimated_size.resize(n);
 	auto progress_reporter = detail::make_progress_reporter(cb.report_progress);
 	detail::add_work_to_do(&progress_reporter, 1.0f); // smooth frames
@@ -322,9 +323,9 @@ auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, result* ou
 	detail::add_work_to_do(&progress_reporter, 1.0f); // write estimated sizes
 	detail::read_frames<512>(work, cb, n);
 	if (cb.should_abort()) { return false; }
-	detail::remove_dc_bias(work);
+	detail::remove_dc_bias(work, SR / 40);
 	if (cb.should_abort()) { return false; }
-	detail::smooth_frames(work, &progress_reporter, 8);
+	detail::smooth_frames(work, &progress_reporter, 16);
 	if (cb.should_abort()) { return false; }
 	detail::find_cycles(work, &progress_reporter);
 	if (cb.should_abort()) { return false; }
