@@ -173,6 +173,10 @@ auto compare(const poka::work& work, poka::range context_a, poka::range context_
 	const auto zenith_b = cycle_b.info.zenith;
 	const auto nadir_a  = cycle_a.info.nadir;
 	const auto nadir_b  = cycle_b.info.nadir;
+	const auto dive_a   = cycle_a.info.dive_pos;
+	const auto dive_b   = cycle_b.info.dive_pos;
+	const auto dive_a_dist = int(dive_a - context_a.beg);
+	const auto dive_b_dist = int(dive_b - context_b.beg);
 	const auto beg_a_dist  = int(cycle_a.range.beg - context_a.beg);
 	const auto beg_b_dist  = int(cycle_b.range.beg - context_b.beg);
 	const auto end_a_dist  = int(cycle_a.range.end - context_a.beg);
@@ -184,13 +188,14 @@ auto compare(const poka::work& work, poka::range context_a, poka::range context_
 	const auto context_a_len = context_a.end - context_a.beg;
 	const auto context_b_len = context_b.end - context_b.beg;
 	const auto total_len     = context_a_len + context_b_len;
+	const auto diff_dive       = float(std::abs(dive_a_dist - dive_b_dist)) / float(total_len);
 	const auto diff_beg        = float(std::abs(beg_a_dist - beg_b_dist)) / float(total_len);
 	const auto diff_end        = float(std::abs(end_a_dist - end_b_dist)) / float(total_len);
 	const auto diff_zenith_pos = float(std::abs(zenith_a_dist - zenith_b_dist)) / float(total_len);
 	const auto diff_nadir_pos  = float(std::abs(nadir_a_dist - nadir_b_dist)) / float(total_len);
 	const auto diff_zenith_val = std::abs(zenith_a.value - zenith_b.value);
 	const auto diff_nadir_val  = std::abs(nadir_a.value - nadir_b.value);
-	return diff_beg + diff_end + diff_zenith_pos + diff_nadir_pos + diff_zenith_val + diff_nadir_val;
+	return diff_beg + diff_end + diff_dive + diff_zenith_pos + diff_nadir_pos + diff_zenith_val + diff_nadir_val;
 }
 
 [[nodiscard]] inline
@@ -202,7 +207,8 @@ auto make_context(const poka::work& work, size_t beg, size_t end) -> poka::range
 
 inline
 auto autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> void {
-	static constexpr auto AUTO_WIN = 0.05f;
+	static constexpr auto AUTO_LOSE = 1.0f;
+	static constexpr auto AUTO_WIN  = 0.01f;
 	auto& cycle = work->cycles[cycle_idx];
 	float best_diff = std::numeric_limits<float>::max();
 	for (size_t depth = 1; depth < max_depth; depth++) {
@@ -218,6 +224,9 @@ auto autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> vo
 			const auto diff = compare(*work, context_a, context_b, cycle_idx_a, cycle_idx_b);
 			total_diff += diff;
 			if ((total_diff / depth) >= best_diff) {
+				break;
+			}
+			if ((total_diff / depth) >= AUTO_LOSE) {
 				break;
 			}
 		}
