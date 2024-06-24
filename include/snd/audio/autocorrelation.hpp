@@ -368,7 +368,7 @@ auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR,
 	detail::read_frames<512>(work, cb, n);
 	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_READ_FRAMES);
 	if (cb.should_abort()) { return false; }
-	detail::remove_dc_bias(work, SR / 40);
+	detail::remove_dc_bias(work, SR / 20);
 	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_REMOVE_DC_BIAS);
 	if (cb.should_abort()) { return false; }
 	detail::smooth_frames(work, &progress_reporter, 16);
