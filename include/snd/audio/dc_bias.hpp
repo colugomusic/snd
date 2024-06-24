@@ -103,9 +103,11 @@ auto generate_frame_values(const std::vector<float>& window_midpoints, size_t wi
 		const auto frame_beg = get_window_center(window_size, window_count, frame_count, index);
 		const auto frame_end = get_window_center(window_size, window_count, frame_count, index + 1);
 		for (size_t frame_index = frame_beg; frame_index < frame_end; frame_index++) {
-			const auto t     = static_cast<float>(frame_index - frame_beg) / static_cast<float>(window_size);
-			const auto value = lerp(window_a_midpoint, window_b_midpoint, ease::quadratic::in_out(t));
-			(*out)[frame_index] = value;
+			const auto t         = static_cast<float>(frame_index - frame_beg) / static_cast<float>(window_size);
+			const auto value     = lerp(window_a_midpoint, window_b_midpoint, ease::quadratic::in_out(t));
+			const auto abs_value = std::abs(value);
+			const auto amount    = abs_value * abs_value * abs_value;
+			(*out)[frame_index] = value * amount;
 		}
 	}
 	// End
