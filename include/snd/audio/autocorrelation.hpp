@@ -223,41 +223,6 @@ auto make_context(const poka::work& work, size_t beg, size_t end) -> poka::range
 }
 
 inline
-auto autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> void {
-	static constexpr auto AUTO_LOSE = 1.0f;
-	static constexpr auto AUTO_WIN  = 0.05f;
-	auto& cycle = work->cycles[cycle_idx];
-	float best_diff = std::numeric_limits<float>::max();
-	for (size_t depth = 1; depth < max_depth; depth++) {
-		if (cycle_idx + (depth * 2) >= work->cycles.size()) {
-			break;
-		}
-		float total_diff = 0.0f;
-		const auto context_a = make_context(*work, cycle_idx + 0    , cycle_idx + (depth * 1));
-		const auto context_b = make_context(*work, cycle_idx + depth, cycle_idx + (depth * 2));
-		for (size_t i = 0; i < depth; i++) {
-			const auto cycle_idx_a = cycle_idx + i;
-			const auto cycle_idx_b = cycle_idx + depth + i;
-			const auto diff = compare(*work, context_a, context_b, cycle_idx_a, cycle_idx_b);
-			total_diff += diff;
-			if ((total_diff / depth) >= best_diff) {
-				break;
-			}
-			if ((total_diff / depth) >= AUTO_LOSE) {
-				break;
-			}
-		}
-		if ((total_diff / depth) < best_diff) {
-			best_diff = total_diff / depth;
-			cycle.info.best_match = context_b.beg;
-			if (best_diff < AUTO_WIN) {
-				return;
-			}
-		}
-	}
-}
-
-inline
 auto remove_dc_bias(poka::work* work, size_t window_size) -> void {
 	audio::dc_bias::detection detection;
 	audio::dc_bias::const_frames const_frames{work->frames.raw.data(), work->frames.raw.size()};
@@ -327,6 +292,72 @@ auto one_cycle(const poka::work& work, poka::result* out) -> void {
 	std::fill(out->frames.estimated_size.begin(), out->frames.estimated_size.end(), size);
 }
 
+inline
+auto cycle_autocorrelation(poka::work* work, size_t cycle_idx, size_t max_depth) -> void {
+	static constexpr auto AUTO_LOSE = 1.0f;
+	static constexpr auto AUTO_WIN  = 0.05f;
+	auto& cycle = work->cycles[cycle_idx];
+	float best_diff = std::numeric_limits<float>::max();
+	for (size_t depth = 1; depth < max_depth; depth++) {
+		if (cycle_idx + (depth * 2) >= work->cycles.size()) {
+			break;
+		}
+		float total_diff = 0.0f;
+		const auto context_a = make_context(*work, cycle_idx + 0    , cycle_idx + (depth * 1));
+		const auto context_b = make_context(*work, cycle_idx + depth, cycle_idx + (depth * 2));
+		for (size_t i = 0; i < depth; i++) {
+			const auto cycle_idx_a = cycle_idx + i;
+			const auto cycle_idx_b = cycle_idx + depth + i;
+			const auto diff = compare(*work, context_a, context_b, cycle_idx_a, cycle_idx_b);
+			total_diff += diff;
+			if ((total_diff / depth) >= best_diff) {
+				break;
+			}
+			if ((total_diff / depth) >= AUTO_LOSE) {
+				break;
+			}
+		}
+		if ((total_diff / depth) < best_diff) {
+			best_diff = total_diff / depth;
+			cycle.info.best_match = context_b.beg;
+			if (best_diff < AUTO_WIN) {
+				return;
+			}
+		}
+	}
+}
+
+template <typename ShouldAbortFn, typename ProgressReporter> [[nodiscard]] inline
+auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressReporter* progress_reporter, size_t depth) -> bool {
+	for (size_t i = 0; i < work->cycles.size(); i++) {
+		if (should_abort()) {
+			return false;
+		}
+		cycle_autocorrelation(work, i, depth);
+		complete_work(progress_reporter, (1.0f / work->cycles.size()) * detail::WORK_COST_NORM_AUTOCORRELATION);
+	}
+	return true;
+}
+
+template <typename ShouldAbortFn, typename ProgressReporter> [[nodiscard]] inline
+auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressReporter* progress_reporter, size_t depth, result* out) -> bool {
+	if (work->cycles.empty()) {
+		no_cycles(out);
+		complete_work(progress_reporter, WORK_COST_NORM_AUTOCORRELATION);
+		return true;
+	}
+	if (work->cycles.size() < 2) {
+		one_cycle(*work, out);
+		complete_work(progress_reporter, WORK_COST_NORM_AUTOCORRELATION);
+		return true;
+	}
+	if (!autocorrelation(work, should_abort, progress_reporter, depth)) {
+		return false;
+	}
+	write_estimated_sizes(*work, progress_reporter, out);
+	return true;
+}
+
 } // detail
 
 template <typename CB> [[nodiscard]] inline
@@ -344,23 +375,7 @@ auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR,
 	if (cb.should_abort()) { return false; }
 	detail::find_cycles(work, &progress_reporter);
 	if (cb.should_abort()) { return false; }
-	if (work->cycles.empty()) {
-		detail::no_cycles(out);
-		return true;
-	}
-	if (work->cycles.size() < 2) {
-		detail::one_cycle(*work, out);
-		return true;
-	}
-	for (size_t i = 0; i < work->cycles.size(); i++) {
-		if (cb.should_abort()) {
-			return false;
-		}
-		detail::autocorrelation(work, i, depth);
-		detail::complete_work(&progress_reporter, (1.0f / work->cycles.size()) * detail::WORK_COST_NORM_AUTOCORRELATION);
-	}
-	detail::write_estimated_sizes(*work, &progress_reporter, out);
-	return true;
+	return detail::autocorrelation(work, cb.should_abort, &progress_reporter, depth, out);
 }
 
 } // poka
