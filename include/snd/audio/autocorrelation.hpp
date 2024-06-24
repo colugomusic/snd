@@ -66,6 +66,22 @@ struct result {
 
 namespace detail {
 
+static constexpr auto WORK_COST_READ_FRAMES     = 1;
+static constexpr auto WORK_COST_SMOOTH_FRAMES   = 2;
+static constexpr auto WORK_COST_FIND_CYCLES     = 2;
+static constexpr auto WORK_COST_AUTOCORRELATION = 4;
+static constexpr auto WORK_COST_WRITE_SIZES     = 2;
+static constexpr auto WORK_COST_REMOVE_DC_BIAS  = 2;
+static constexpr auto WORK_COST_TOTAL =
+	WORK_COST_READ_FRAMES + WORK_COST_SMOOTH_FRAMES + WORK_COST_FIND_CYCLES +
+	WORK_COST_AUTOCORRELATION + WORK_COST_WRITE_SIZES + WORK_COST_REMOVE_DC_BIAS;
+static constexpr auto WORK_COST_NORM_READ_FRAMES     = float(WORK_COST_READ_FRAMES) / float(WORK_COST_TOTAL);
+static constexpr auto WORK_COST_NORM_SMOOTH_FRAMES   = float(WORK_COST_SMOOTH_FRAMES) / float(WORK_COST_TOTAL);
+static constexpr auto WORK_COST_NORM_FIND_CYCLES     = float(WORK_COST_FIND_CYCLES) / float(WORK_COST_TOTAL);
+static constexpr auto WORK_COST_NORM_AUTOCORRELATION = float(WORK_COST_AUTOCORRELATION) / float(WORK_COST_TOTAL);
+static constexpr auto WORK_COST_NORM_WRITE_SIZES     = float(WORK_COST_WRITE_SIZES) / float(WORK_COST_TOTAL);
+static constexpr auto WORK_COST_NORM_REMOVE_DC_BIAS  = float(WORK_COST_REMOVE_DC_BIAS) / float(WORK_COST_TOTAL);
+
 template <typename ReportProgressFn>
 struct progress_reporter {
 	ReportProgressFn report_progress;
@@ -85,9 +101,9 @@ auto add_work_to_do(progress_reporter<ReportProgressFn>* reporter, float work) -
 
 template <typename ReportProgressFn>
 auto complete_work(progress_reporter<ReportProgressFn>* reporter, float work) -> void {
-	const auto quantized_work_done_prv = size_t(reporter->work_done * 100) / 100;
+	const auto quantized_work_done_prv = size_t(reporter->work_done * 100);
 	reporter->work_done += work;
-	const auto quantized_work_done_now = size_t(reporter->work_done * 100) / 100;
+	const auto quantized_work_done_now = size_t(reporter->work_done * 100);
 	if (quantized_work_done_now > quantized_work_done_prv) {
 		reporter->report_progress(reporter->work_done / reporter->total_work);
 	}
@@ -162,7 +178,7 @@ auto find_cycles(poka::work* work, ProgressReporter* progress_reporter) -> void 
 			cycle_beg = i;
 			init = true;
 		}
-		complete_work(progress_reporter, 1.0f / frame_count);
+		complete_work(progress_reporter, (1.0f / frame_count) * WORK_COST_NORM_FIND_CYCLES);
 	}
 }
 
@@ -265,7 +281,7 @@ auto smooth_frames(poka::work* work, ProgressReporter* progress_reporter, size_t
 		const auto window_end = size_t(std::min(work->frames.raw.size(), i + window_size));
 		const auto sum = std::accumulate(work->frames.raw.begin() + window_beg, work->frames.raw.begin() + window_end, 0.0f);
 		work->frames.smoothed[i] = sum / float(window_end - window_beg);
-		complete_work(progress_reporter, 1.0f / work->frames.raw.size());
+		complete_work(progress_reporter, (1.0f / work->frames.raw.size()) * WORK_COST_NORM_SMOOTH_FRAMES);
 	}
 }
 
@@ -288,7 +304,7 @@ auto write_estimated_sizes(const poka::work& work, ProgressReporter* progress_re
 			const auto t                  = float(j - cycle_b.range.beg) / cycle_b_len;
 			out->frames.estimated_size[j] = lerp(size_a, size_b, ease::quadratic::in_out(t));
 		}
-		complete_work(progress_reporter, 1.0f / work.cycles.size());
+		complete_work(progress_reporter, (1.0f / work.cycles.size()) * WORK_COST_NORM_WRITE_SIZES);
 	}
 	// End
 	{
@@ -317,13 +333,12 @@ template <typename CB> [[nodiscard]] inline
 auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR, result* out) -> bool {
 	out->frames.estimated_size.resize(n);
 	auto progress_reporter = detail::make_progress_reporter(cb.report_progress);
-	detail::add_work_to_do(&progress_reporter, 1.0f); // smooth frames
-	detail::add_work_to_do(&progress_reporter, 1.0f); // find cycles
-	detail::add_work_to_do(&progress_reporter, 1.0f); // autocorrelation
-	detail::add_work_to_do(&progress_reporter, 1.0f); // write estimated sizes
+	detail::add_work_to_do(&progress_reporter, 1.0f);
 	detail::read_frames<512>(work, cb, n);
+	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_READ_FRAMES);
 	if (cb.should_abort()) { return false; }
 	detail::remove_dc_bias(work, SR / 40);
+	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_REMOVE_DC_BIAS);
 	if (cb.should_abort()) { return false; }
 	detail::smooth_frames(work, &progress_reporter, 16);
 	if (cb.should_abort()) { return false; }
@@ -342,7 +357,7 @@ auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR,
 			return false;
 		}
 		detail::autocorrelation(work, i, depth);
-		detail::complete_work(&progress_reporter, 1.0f / work->cycles.size());
+		detail::complete_work(&progress_reporter, (1.0f / work->cycles.size()) * detail::WORK_COST_NORM_AUTOCORRELATION);
 	}
 	detail::write_estimated_sizes(*work, &progress_reporter, out);
 	return true;
