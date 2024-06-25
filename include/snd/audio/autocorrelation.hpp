@@ -3,6 +3,7 @@
 #include "dc_bias.hpp"
 #include "../ease.hpp"
 #include "../misc.hpp"
+#include <chrono>
 #include <numeric>
 #include <vector>
 
@@ -54,6 +55,7 @@ struct work {
 	struct {
 		std::vector<float> raw;
 		std::vector<float> smoothed;
+		std::vector<float> estimated_size;
 	} frames;
 	std::vector<cycle> cycles;
 };
@@ -67,20 +69,16 @@ struct result {
 namespace detail {
 
 static constexpr auto WORK_COST_READ_FRAMES     = 1;
-static constexpr auto WORK_COST_SMOOTH_FRAMES   = 2;
-static constexpr auto WORK_COST_FIND_CYCLES     = 2;
-static constexpr auto WORK_COST_AUTOCORRELATION = 4;
-static constexpr auto WORK_COST_WRITE_SIZES     = 2;
-static constexpr auto WORK_COST_REMOVE_DC_BIAS  = 2;
+static constexpr auto WORK_COST_REMOVE_DC_BIAS  = 8;
+static constexpr auto WORK_COST_PRE_SMOOTH      = 200;
+static constexpr auto WORK_COST_FIND_CYCLES     = 10;
+static constexpr auto WORK_COST_AUTOCORRELATION = 4000;
+static constexpr auto WORK_COST_WRITE_SIZES     = 1;
+static constexpr auto WORK_COST_POST_SMOOTH     = 1000;
 static constexpr auto WORK_COST_TOTAL =
-	WORK_COST_READ_FRAMES + WORK_COST_SMOOTH_FRAMES + WORK_COST_FIND_CYCLES +
-	WORK_COST_AUTOCORRELATION + WORK_COST_WRITE_SIZES + WORK_COST_REMOVE_DC_BIAS;
-static constexpr auto WORK_COST_NORM_READ_FRAMES     = float(WORK_COST_READ_FRAMES) / float(WORK_COST_TOTAL);
-static constexpr auto WORK_COST_NORM_SMOOTH_FRAMES   = float(WORK_COST_SMOOTH_FRAMES) / float(WORK_COST_TOTAL);
-static constexpr auto WORK_COST_NORM_FIND_CYCLES     = float(WORK_COST_FIND_CYCLES) / float(WORK_COST_TOTAL);
-static constexpr auto WORK_COST_NORM_AUTOCORRELATION = float(WORK_COST_AUTOCORRELATION) / float(WORK_COST_TOTAL);
-static constexpr auto WORK_COST_NORM_WRITE_SIZES     = float(WORK_COST_WRITE_SIZES) / float(WORK_COST_TOTAL);
-static constexpr auto WORK_COST_NORM_REMOVE_DC_BIAS  = float(WORK_COST_REMOVE_DC_BIAS) / float(WORK_COST_TOTAL);
+	WORK_COST_READ_FRAMES + WORK_COST_PRE_SMOOTH + WORK_COST_FIND_CYCLES +
+	WORK_COST_AUTOCORRELATION + WORK_COST_WRITE_SIZES + WORK_COST_REMOVE_DC_BIAS +
+	WORK_COST_POST_SMOOTH;
 
 template <typename ReportProgressFn>
 struct progress_reporter {
@@ -178,7 +176,7 @@ auto find_cycles(poka::work* work, ProgressReporter* progress_reporter) -> void 
 			cycle_beg = i;
 			init = true;
 		}
-		complete_work(progress_reporter, (1.0f / frame_count) * WORK_COST_NORM_FIND_CYCLES);
+		complete_work(progress_reporter, (1.0f / frame_count) * WORK_COST_FIND_CYCLES);
 	}
 }
 
@@ -231,51 +229,67 @@ auto remove_dc_bias(poka::work* work, size_t window_size) -> void {
 	audio::dc_bias::apply_correction(frames, detection);
 }
 
+[[nodiscard]] inline
+auto smooth_value(const std::vector<float>& in, size_t index, size_t window_size) -> float {
+	const auto window_beg = size_t(std::max(0, int(index) - int(window_size)));
+	const auto window_end = size_t(std::min(in.size(), index + window_size));
+	const auto sum = std::accumulate(in.begin() + window_beg, in.begin() + window_end, 0.0f);
+	return sum / float(window_end - window_beg);
+}
+
 template <typename ProgressReporter>
-auto smooth_frames(poka::work* work, ProgressReporter* progress_reporter, size_t window_size) -> void {
+auto pre_smooth(poka::work* work, ProgressReporter* progress_reporter, size_t window_size) -> void {
 	work->frames.smoothed.resize(work->frames.raw.size());
 	if (work->frames.raw.size() < window_size) {
 		std::copy(work->frames.raw.begin(), work->frames.raw.end(), work->frames.smoothed.begin());
 		return;
 	}
-	poka::range window;
-	window.beg = 0;
-	window.end = window_size;
 	for (size_t i = 0; i < work->frames.raw.size(); i++) {
-		const auto window_beg = size_t(std::max(0, int(i) - int(window_size)));
-		const auto window_end = size_t(std::min(work->frames.raw.size(), i + window_size));
-		const auto sum = std::accumulate(work->frames.raw.begin() + window_beg, work->frames.raw.begin() + window_end, 0.0f);
-		work->frames.smoothed[i] = sum / float(window_end - window_beg);
-		complete_work(progress_reporter, (1.0f / work->frames.raw.size()) * WORK_COST_NORM_SMOOTH_FRAMES);
+		work->frames.smoothed[i] = smooth_value(work->frames.raw, i, window_size);
+		complete_work(progress_reporter, (1.0f / work->frames.raw.size()) * WORK_COST_PRE_SMOOTH);
+	}
+}
+
+template <typename ProgressReporter>
+auto post_smooth(const poka::work& work, ProgressReporter* progress_reporter, size_t window_size, poka::result* out) -> void {
+	out->frames.estimated_size.resize(work.frames.raw.size());
+	if (work.frames.raw.size() < window_size) {
+		std::copy(work.frames.estimated_size.begin(), work.frames.estimated_size.end(), out->frames.estimated_size.begin());
+		return;
+	}
+	for (size_t i = 0; i < work.frames.raw.size(); i++) {
+		out->frames.estimated_size[i] = smooth_value(work.frames.estimated_size, i, window_size);
+		complete_work(progress_reporter, (1.0f / work.frames.raw.size()) * WORK_COST_POST_SMOOTH);
 	}
 }
 
 template <typename ProgressReporter> inline
-auto write_estimated_sizes(const poka::work& work, ProgressReporter* progress_reporter, poka::result* out) -> void {
+auto write_estimated_sizes(poka::work* work, ProgressReporter* progress_reporter) -> void {
+	work->frames.estimated_size.resize(work->frames.raw.size());
 	// Beginning
 	{
-		const auto cycle = work.cycles.front();
+		const auto cycle = work->cycles.front();
 		const auto size  = float(cycle.info.best_match - cycle.range.beg);
-		std::fill(out->frames.estimated_size.begin(), out->frames.estimated_size.begin() + cycle.range.end, size);
+		std::fill(work->frames.estimated_size.begin(), work->frames.estimated_size.begin() + cycle.range.end, size);
 	}
 	// Middle
-	for (size_t i = 1; i < work.cycles.size() - 1; i++) {
-		const auto& cycle_a = work.cycles[i-1];
-		const auto& cycle_b = work.cycles[i-0];
+	for (size_t i = 1; i < work->cycles.size() - 1; i++) {
+		const auto& cycle_a = work->cycles[i-1];
+		const auto& cycle_b = work->cycles[i-0];
 		const auto cycle_b_len = float(cycle_b.range.end - cycle_b.range.beg);
 		const auto size_a      = float(cycle_a.info.best_match - cycle_a.range.beg);
 		const auto size_b      = float(cycle_b.info.best_match - cycle_b.range.beg);
 		for (size_t j = cycle_b.range.beg; j < cycle_b.range.end; j++) {
 			const auto t                  = float(j - cycle_b.range.beg) / cycle_b_len;
-			out->frames.estimated_size[j] = lerp(size_a, size_b, ease::quadratic::in_out(t));
+			work->frames.estimated_size[j] = lerp(size_a, size_b, t);
 		}
-		complete_work(progress_reporter, (1.0f / work.cycles.size()) * WORK_COST_NORM_WRITE_SIZES);
+		complete_work(progress_reporter, (1.0f / work->cycles.size()) * WORK_COST_WRITE_SIZES);
 	}
 	// End
 	{
-		const auto cycle = work.cycles.back();
+		const auto cycle = work->cycles.back();
 		const auto size  = float(cycle.info.best_match - cycle.range.beg);
-		std::fill(out->frames.estimated_size.begin() + cycle.range.beg, out->frames.estimated_size.end(), size);
+		std::fill(work->frames.estimated_size.begin() + cycle.range.beg, work->frames.estimated_size.end(), size);
 	}
 }
 
@@ -334,27 +348,29 @@ auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressRepor
 			return false;
 		}
 		cycle_autocorrelation(work, i, depth);
-		complete_work(progress_reporter, (1.0f / work->cycles.size()) * detail::WORK_COST_NORM_AUTOCORRELATION);
+		complete_work(progress_reporter, (1.0f / work->cycles.size()) * detail::WORK_COST_AUTOCORRELATION);
 	}
 	return true;
 }
 
 template <typename ShouldAbortFn, typename ProgressReporter> [[nodiscard]] inline
-auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressReporter* progress_reporter, size_t depth, result* out) -> bool {
+auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressReporter* progress_reporter, size_t depth, size_t SR, poka::result* out) -> bool {
 	if (work->cycles.empty()) {
 		no_cycles(out);
-		complete_work(progress_reporter, WORK_COST_NORM_AUTOCORRELATION);
+		complete_work(progress_reporter, WORK_COST_AUTOCORRELATION);
 		return true;
 	}
 	if (work->cycles.size() < 2) {
 		one_cycle(*work, out);
-		complete_work(progress_reporter, WORK_COST_NORM_AUTOCORRELATION);
+		complete_work(progress_reporter, WORK_COST_AUTOCORRELATION);
 		return true;
 	}
 	if (!autocorrelation(work, should_abort, progress_reporter, depth)) {
 		return false;
 	}
-	write_estimated_sizes(*work, progress_reporter, out);
+	write_estimated_sizes(work, progress_reporter);
+	if (should_abort()) { return false; }
+	detail::post_smooth(*work, progress_reporter, SR / 100, out);
 	return true;
 }
 
@@ -362,20 +378,19 @@ auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressRepor
 
 template <typename CB> [[nodiscard]] inline
 auto autocorrelation(poka::work* work, CB cb, size_t n, size_t depth, size_t SR, result* out) -> bool {
-	out->frames.estimated_size.resize(n);
 	auto progress_reporter = detail::make_progress_reporter(cb.report_progress);
-	detail::add_work_to_do(&progress_reporter, 1.0f);
+	detail::add_work_to_do(&progress_reporter, float(detail::WORK_COST_TOTAL));
 	detail::read_frames<512>(work, cb, n);
-	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_READ_FRAMES);
+	detail::complete_work(&progress_reporter, detail::WORK_COST_READ_FRAMES);
 	if (cb.should_abort()) { return false; }
 	detail::remove_dc_bias(work, SR / 20);
-	detail::complete_work(&progress_reporter, detail::WORK_COST_NORM_REMOVE_DC_BIAS);
+	detail::complete_work(&progress_reporter, detail::WORK_COST_REMOVE_DC_BIAS);
 	if (cb.should_abort()) { return false; }
-	detail::smooth_frames(work, &progress_reporter, 16);
+	detail::pre_smooth(work, &progress_reporter, 3);
 	if (cb.should_abort()) { return false; }
 	detail::find_cycles(work, &progress_reporter);
 	if (cb.should_abort()) { return false; }
-	return detail::autocorrelation(work, cb.should_abort, &progress_reporter, depth, out);
+	return detail::autocorrelation(work, cb.should_abort, &progress_reporter, depth, SR, out);
 }
 
 } // poka
