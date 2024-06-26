@@ -45,7 +45,7 @@ struct vector_info {
 	fudge::size size;
 	fudge::SR SR;
 	fudge::uniformity uniformity;
-	const poka::result* analysis = nullptr;
+	const poka::output* analysis = nullptr;
 };
 
 struct frame_info {
