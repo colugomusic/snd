@@ -256,21 +256,21 @@ auto read_stereo_frame(const fudge::particle& p, const fudge::vector_info& v, Re
 template <typename ReadSampleFn> [[nodiscard]]
 auto process(fudge::particle* p, const fudge::vector_info& v, fudge::frame_info f, ReadSampleFn read_sample_fn) -> stereo_frame {
 	stereo_frame out;
-	if (p->trig_primed && detail::is_flag_set(f.flags, f.flags.play)) {
+	const auto play  = detail::is_flag_set(f.flags, f.flags.play);
+	const auto reset = detail::is_flag_set(f.flags, f.flags.reset);
+	if (p->trig_primed && play) {
 		detail::reset(p, v, f);
 	}
 	else {
-		if (detail::is_flag_set(f.flags, f.flags.reset)) {
-			if (!detail::is_flag_set(f.flags, f.flags.play)) {
-				p->trig_primed = true;
-			}
-			else {
-				detail::reset(p, v, f);
-			}
+		if (reset) {
+			if (!play) { p->trig_primed = true; }
+			else       { detail::reset(p, v, f); }
 		}
 		else if(p->trigger_timer >= std::floor(p->grains[p->flip_flop.value].size / 2)) {
-			p->trigger_timer = 0.f;
-			detail::trigger_next_grain(p, v, f, true);
+			if (play) {
+				p->trigger_timer = 0.f;
+				detail::trigger_next_grain(p, v, f, true);
+			}
 		}
 	}
 	for (size_t grain_idx = 0; grain_idx < 2; grain_idx++) {
