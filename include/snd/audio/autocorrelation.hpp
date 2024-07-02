@@ -51,7 +51,7 @@ struct work {
 		std::vector<float> smoothed;
 		std::vector<float> estimated_size;
 	} frames;
-	std::vector<cycle_info> cycle_info;
+	std::vector<poka::cycle_info> cycle_info;
 	std::vector<poka::range> cycle_range;
 	std::vector<size_t> cycle_best_match;
 };
