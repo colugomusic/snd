@@ -365,19 +365,19 @@ struct input {
 	} tongue;
 };
 
-struct model {
+struct dsp {
 	detail::step step;
 };
 
 [[nodiscard]] inline
-auto make() -> tract::model {
-	tract::model model;
-	detail::init(&model.step);
-	return model;
+auto make_dsp() -> tract::dsp {
+	tract::dsp dsp;
+	detail::init(&dsp.step);
+	return dsp;
 }
 
 [[nodiscard]] inline
-auto process(tract::model* model, int SR, float speed, const tract::input& input) -> ml::DSPVector {
+auto process(tract::dsp* dsp, int SR, float speed, const tract::input& input) -> ml::DSPVector {
 	static constexpr auto lambda1 = ml::DSPVector(detail::LAMBDA1_FN);
 	static constexpr auto lambda2 = ml::DSPVector(detail::LAMBDA2_FN);
 	ml::DSPVector out;
@@ -395,16 +395,16 @@ auto process(tract::model* model, int SR, float speed, const tract::input& input
 		step_input.throat.position      = input.throat.position[i];
 		step_input.tongue.diameter      = input.tongue.diameter[i];
 		step_input.tongue.position      = input.tongue.position[i];
-		detail::process(&model->step, SR, lambda1[i], step_input, &lip_value, &nose_value);
+		detail::process(&dsp->step, SR, lambda1[i], step_input, &lip_value, &nose_value);
 		lip[i] += lip_value;
 		nose[i] += nose_value;
-		detail::process(&model->step, SR, lambda2[i], step_input, &lip_value, &nose_value);
+		detail::process(&dsp->step, SR, lambda2[i], step_input, &lip_value, &nose_value);
 		lip[i] += lip_value;
 		nose[i] += nose_value;
 	}
 	out = (lip + nose) / 2.0f;
-	detail::reshape_tract(&model->step, SR, speed, input.fricatives.active);
-	detail::calculate_reflections(&model->step);
+	detail::reshape_tract(&dsp->step, SR, speed, input.fricatives.active);
+	detail::calculate_reflections(&dsp->step);
 #if _DEBUG
 	ml::validate(out);
 #endif
@@ -413,8 +413,8 @@ auto process(tract::model* model, int SR, float speed, const tract::input& input
 }
 
 inline
-auto reset(tract::model* model) -> void {
-	detail::reset(&model->step);
+auto reset(tract::dsp* dsp) -> void {
+	detail::reset(&dsp->step);
 }
 
 } // tract

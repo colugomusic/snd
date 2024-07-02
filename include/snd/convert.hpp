@@ -30,6 +30,11 @@ T AF2dB(T af)
 	return std::log(af) / std::log(1.12202);
 }
 
+inline float pitch_to_frequency(float pitch)
+{
+	return 8.1758f * std::pow(2.0f, pitch / 12.0f);
+}
+
 template <class T>
 T P2FF(T p)
 {
