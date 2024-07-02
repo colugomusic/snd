@@ -48,13 +48,12 @@ struct step_transient {
 	int position;
 	float time_alive;
 	float life_time;
-	float strength;
-	float exponent;
 };
 
 struct step_transients { 
 	std::array<step_transient, 32> list;
-	int count = 0;
+	size_t count = 0;
+	size_t index = 0;
 };
 
 struct step {
@@ -155,18 +154,32 @@ auto configure(detail::step* step, const step_input& input) -> void {
 }
 
 inline
+auto add_transient(detail::step* step, int position, float speed) -> void {
+	if (step->transients.count == step->transients.list.size()) {
+		return;
+	}
+	step_transient t;
+	t.position = position;
+	t.time_alive = 0.0f;
+	t.life_time = 0.2f * (1.0f / speed);
+	step->transients.list[step->transients.index++] = t;
+	step->transients.count++;
+	step->transients.index %= step->transients.list.size();
+}
+
+inline
 auto process_transients(detail::step* step, int SR) -> void {
-	for (int i = 0; i < step->transients.count; i++) {
-		auto& transient = step->transients.list[i];
-		const auto amplitude = transient.strength * std::pow(2.0f, -transient.exponent * transient.time_alive); 
-		step->R[transient.position] += amplitude / 2.0f;
-		step->L[transient.position] += amplitude / 2.0f; 
-		transient.time_alive += 1.0f / (SR * 2.0f);
-	} 
-	for (int i = step->transients.count - 1; i >= 0; i--) {
-		auto& transient = step->transients.list[i]; 
-		if (transient.time_alive > transient.life_time) {
-			step->transients.count--;
+	static constexpr auto TRANSIENT_EXPONENT = 200.0f;
+	static constexpr auto TRANSIENT_STRENGTH = 0.3f;
+	for (auto& transient : step->transients.list) {
+		if (transient.time_alive < transient.life_time) {
+			const auto amplitude = TRANSIENT_STRENGTH * std::pow(2.0f, -TRANSIENT_EXPONENT * transient.time_alive); 
+			step->R[transient.position] += amplitude / 2.0f;
+			step->L[transient.position] += amplitude / 2.0f; 
+			transient.time_alive += 1.0f / (SR * 2.0f);
+			if (transient.time_alive >= transient.life_time) {
+				step->transients.count--;
+			}
 		}
 	}
 }
@@ -306,23 +319,9 @@ auto calculate_slow_return(int index) -> float {
 }
 
 inline
-auto add_transient(detail::step* step, int position, float speed) -> void {
-	if (step->transients.count == step->transients.list.size()) {
-		return;
-	}
-	step_transient t;
-	t.position = position;
-	t.time_alive = 0.0f;
-	t.life_time = 0.2f * (1.0f / speed);
-	t.strength = 0.3f;
-	t.exponent = 200.0f;
-	step->transients.list[step->transients.count++] = t;
-}
-
-inline
 auto reshape_tract(detail::step* step, int SR, float speed, bool fricatives) -> void {
 	const auto delta_time = float(kFloatsPerDSPVector) / SR;
-	auto amount = delta_time * MOVEMENT_SPEED;
+	auto amount = delta_time * MOVEMENT_SPEED * (1.0f / speed);
 	auto new_last_obstruction = -1; 
 	auto move_towards = [](float current, float target, float amount_up, float amount_down) {
 		if (current < target) return std::min(current + amount_up, target);
