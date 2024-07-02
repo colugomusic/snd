@@ -106,7 +106,7 @@ auto complete_work(progress_reporter<ReportProgressFn>* reporter, float work) ->
 	}
 }
 
-template <size_t BufferSize, typename CB> [[nodiscard]] inline
+template <size_t BufferSize, typename CB> inline
 auto read_frames(poka::work* work, CB cb, size_t n) -> void {
 	work->frames.raw.resize(n);
 	size_t frames_remaining = n;
