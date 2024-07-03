@@ -44,25 +44,24 @@ struct step_input {
 	} tongue;
 };
 
-struct step_transient {
+struct transient {
 	int position;
 	float time_alive;
 	float life_time;
 };
 
-struct step_transients { 
-	std::array<step_transient, 32> list;
+struct transients { 
+	std::array<transient, 32> list;
 	size_t count = 0;
 	size_t index = 0;
 };
 
 struct step {
-	step_transients transients;
+	detail::transients transients;
 	std::array<float, N> a = {};
 	std::array<float, N> diameter = {};
 	std::array<float, N> rest_diameter = {};
 	std::array<float, N> target_diameter = {};
-	std::array<float, N> new_diameter = {};
 	std::array<float, N> L = {};
 	std::array<float, N> R = {};
 	std::array<float, N + 1> junction_output_L = {};
@@ -76,7 +75,6 @@ struct step {
 	std::array<float, NOSE_LENGTH + 1> nose_junction_output_L = {};
 	std::array<float, NOSE_LENGTH + 1> nose_junction_output_R = {};
 	std::array<float, NOSE_LENGTH + 1> nose_reflection = {};
-	int last_obstruction      = -1;
 	float fade                = 1.0f;
 	float reflection_L        = 0.0f;
 	float reflection_R        = 0.0f;
@@ -89,20 +87,39 @@ struct step {
 	float velum_target        = 0.01f;
 };
 
+} // detail
+
+struct dsp {
+	detail::step step;
+	int last_obstruction = -1;
+};
+
+namespace detail {
+
 inline
 auto set_rest_diameter(detail::step* step, const step_input& input) -> void {
 	for (int i = BLADE_START; i < LIP_START; i++) {
 		const auto t = 1.1f * float(M_PI) * (input.tongue.position - i) / (TIP_START - BLADE_START);
 		const auto fixed_tongue_diameter = 2.0f + (input.tongue.diameter - 2.0f) / 1.5f; 
 		auto curve = (1.5f - fixed_tongue_diameter + GRID_OFFSET) * std::cos(t); 
-		if (i == BLADE_START - 2 || i == LIP_START - 1) {
-			curve *= 0.8f;
-		} 
-		if (i == BLADE_START || i == LIP_START - 2) {
-			curve *= 0.94f;
-		} 
+		if (i == BLADE_START - 2 || i == LIP_START - 1) { curve *= 0.8f; } 
+		if (i == BLADE_START || i == LIP_START - 2)     { curve *= 0.94f; } 
 		step->rest_diameter[i] = 1.5f - curve;
 	}
+}
+
+[[nodiscard]] inline
+auto calculate_throat_width(float position) -> float {
+	if (position < 25.f) { return 10.0f; }
+	if (position >= TIP_START) { return 5.0f; }
+	return 10.0f - 5.0f * (position - 25) / (TIP_START - 25);
+}
+
+[[nodiscard]] inline
+auto calculate_throat_shrink(float rel_pos, float width) -> float {
+	if (rel_pos <= 0.0f) { return 0.0f; }
+	if (rel_pos > width) { return 1.0f; }
+	return 0.5f * (1.0f - std::cos(float(float(M_PI)) * rel_pos / width));
 }
 
 inline
@@ -118,16 +135,7 @@ auto configure(detail::step* step, const step_input& input) -> void {
 	}
 	auto diameter = input.throat.diameter - 0.3f; 
 	if (diameter < 0.0f) diameter = 0.0f; 
-	auto width = 2.0f; 
-	if (input.throat.position < 25.0f) {
-		width = 10.0f;
-	}
-	else if (input.throat.position >= TIP_START) {
-		width = 5.0f;
-	}
-	else {
-		width = 10.0f - 5.0f * (input.throat.position - 25) / (TIP_START - 25);
-	} 
+	const auto width = calculate_throat_width(input.throat.position);
 	if (input.throat.position >= 2 && input.throat.position < N && diameter < 3) {
 		auto int_index = int(input.throat.position); 
 		for (int i = -int(std::ceil(width)) - 1; i < width + 1; i++) {
@@ -136,16 +144,7 @@ auto configure(detail::step* step, const step_input& input) -> void {
 			}
 			auto rel_pos = (int_index + i) - input.throat.position; 
 			rel_pos = std::abs(rel_pos) - 0.5f; 
-			float shrink; 
-			if (rel_pos <= 0.0f) {
-				shrink = 0.0f;
-			}
-			else if (rel_pos > width) {
-				shrink = 1.0f;
-			}
-			else {
-				shrink = 0.5f * (1.0f - std::cos(float(float(M_PI)) * rel_pos / width));
-			} 
+			const auto shrink = calculate_throat_shrink(rel_pos, width);
 			if (diameter < step->target_diameter[int_index + i]) {
 				step->target_diameter[int_index + i] = diameter + (step->target_diameter[int_index + i] - diameter) * shrink;
 			}
@@ -154,23 +153,23 @@ auto configure(detail::step* step, const step_input& input) -> void {
 }
 
 inline
-auto add_transient(detail::step* step, int position, float speed) -> void {
-	if (step->transients.count == step->transients.list.size()) {
+auto add_transient(tract::dsp* dsp, int position, float speed) -> void {
+	if (dsp->step.transients.count == dsp->step.transients.list.size()) {
 		return;
 	}
-	step_transient t;
+	transient t;
 	t.position = position;
 	t.time_alive = 0.0f;
 	t.life_time = 0.2f * (1.0f / speed);
-	step->transients.list[step->transients.index++] = t;
-	step->transients.count++;
-	step->transients.index %= step->transients.list.size();
+	dsp->step.transients.list[dsp->step.transients.index++] = t;
+	dsp->step.transients.count++;
+	dsp->step.transients.index %= dsp->step.transients.list.size();
 }
 
 inline
 auto process_transients(detail::step* step, int SR) -> void {
 	static constexpr auto TRANSIENT_EXPONENT = 200.0f;
-	static constexpr auto TRANSIENT_STRENGTH = 0.3f;
+	static constexpr auto TRANSIENT_STRENGTH = 0.1f;
 	for (auto& transient : step->transients.list) {
 		if (transient.time_alive < transient.life_time) {
 			const auto amplitude = TRANSIENT_STRENGTH * std::pow(2.0f, -TRANSIENT_EXPONENT * transient.time_alive); 
@@ -279,6 +278,13 @@ auto calculate_nose_reflections(detail::step* step) -> void {
 	}
 }
 
+[[nodiscard]] inline
+auto calculate_nose_diameter(int index) -> float {
+	const auto d        = 2.0f * (float(index) / NOSE_LENGTH); 
+	const auto diameter = d < 1.0f ? 0.4f + 1.6f * d : 0.5f + 1.5f * (2.0f - d);
+	return std::min(diameter, 1.9f);
+}
+
 inline
 auto reset(detail::step* step) -> void {
 	for (int i = 0; i < N; i++) {
@@ -286,15 +292,10 @@ auto reset(detail::step* step) -> void {
 		if (i < 7.0f * N / 44.0f - 0.5f) { diameter = 0.6f; }
 		else if (i < 12.0f * N / 44.0f)  { diameter = 1.1f; }
 		else                             { diameter = 1.0f; } 
-		step->diameter[i] = step->rest_diameter[i] = step->target_diameter[i] = step->new_diameter[i] = diameter;
+		step->diameter[i] = step->rest_diameter[i] = step->target_diameter[i] = diameter;
 	}
 	for (int i = 0; i < NOSE_LENGTH; i++) {
-		float diameter; 
-		auto d = 2.0f * (float(i) / NOSE_LENGTH); 
-		if (d < 1.0f) { diameter = 0.4f + 1.6f * d; }
-		else          { diameter = 0.5f + 1.5f * (2.0f - d); } 
-		diameter = std::min(diameter, 1.9f); 
-		step->nose_diameter[i] = diameter;
+		step->nose_diameter[i] = calculate_nose_diameter(i);
 	}
 	step->new_reflection_L = step->new_reflection_R = step->new_reflection_nose = 0.0f;
 	calculate_reflections(step);
@@ -309,40 +310,37 @@ auto init(detail::step* step) -> void {
 
 [[nodiscard]] inline constexpr
 auto calculate_slow_return(int index) -> float {
-	if (index < NOSE_START) {
-		return 0.6f;
-	}
-	if (index >= TIP_START) {
-		return 1.0f;
-	}
+	if (index < NOSE_START) { return 0.6f; }
+	if (index >= TIP_START) { return 1.0f; }
 	return 0.6f + 0.4f * (float(index) - NOSE_START) / (TIP_START - NOSE_START);
 }
 
 inline
-auto reshape_tract(detail::step* step, int SR, float speed, bool fricatives) -> void {
+auto reshape_tract(tract::dsp* dsp, int SR, float speed, bool fricatives) -> void {
+	static constexpr auto OBSTRUCTED = 0.05f;
 	const auto delta_time = float(kFloatsPerDSPVector) / SR;
-	auto amount = delta_time * MOVEMENT_SPEED * (1.0f / speed);
-	auto new_last_obstruction = -1; 
+	auto amount = delta_time * MOVEMENT_SPEED * speed;
+	auto found_obstruction = -1; 
 	auto move_towards = [](float current, float target, float amount_up, float amount_down) {
 		if (current < target) return std::min(current + amount_up, target);
 		else return std::max(current - amount_down, target);
 	}; 
 	for (int i = 0; i < N; i++) {
-		auto diameter = step->diameter[i];
-		auto target_diameter = step->target_diameter[i]; 
-		if (fricatives && diameter <= 0.0f) {
-			new_last_obstruction = i;
+		auto diameter = dsp->step.diameter[i];
+		auto target_diameter = dsp->step.target_diameter[i]; 
+		dsp->step.diameter[i] = move_towards(diameter, target_diameter, calculate_slow_return(i) * amount, 2.0f * amount);
+		if (fricatives && diameter <= OBSTRUCTED) {
+			found_obstruction = i;
 		} 
-		step->diameter[i] = move_towards(diameter, target_diameter, calculate_slow_return(i) * amount, 2.0f * amount);
 	} 
 	if (fricatives) {
-		if (step->last_obstruction > -1 && new_last_obstruction == -1 && step->nose_a[0] < 0.05f) {
-			add_transient(step, step->last_obstruction, speed);
+		if (dsp->last_obstruction >= 0 && found_obstruction < 0 && dsp->step.nose_a[0] < 0.05f) {
+			add_transient(dsp, dsp->last_obstruction, speed);
 		} 
-		step->last_obstruction = new_last_obstruction;
+		dsp->last_obstruction = found_obstruction;
 	} 
-	step->nose_diameter[0] = move_towards(step->nose_diameter[0], step->velum_target, amount * 0.25f, amount * 0.1f);
-	step->nose_a[0] = step->nose_diameter[0] * step->nose_diameter[0];
+	dsp->step.nose_diameter[0] = move_towards(dsp->step.nose_diameter[0], dsp->step.velum_target, amount * 0.25f, amount * 0.1f);
+	dsp->step.nose_a[0] = dsp->step.nose_diameter[0] * dsp->step.nose_diameter[0];
 }
 
 } // detail
@@ -362,10 +360,6 @@ struct input {
 		ml::DSPVector position;
 		ml::DSPVector diameter;
 	} tongue;
-};
-
-struct dsp {
-	detail::step step;
 };
 
 [[nodiscard]] inline
@@ -402,7 +396,7 @@ auto process(tract::dsp* dsp, int SR, float speed, const tract::input& input) ->
 		nose[i] += nose_value;
 	}
 	out = (lip + nose) / 2.0f;
-	detail::reshape_tract(&dsp->step, SR, speed, input.fricatives.active);
+	detail::reshape_tract(dsp, SR, speed, input.fricatives.active);
 	detail::calculate_reflections(&dsp->step);
 #if _DEBUG
 	ml::validate(out);
