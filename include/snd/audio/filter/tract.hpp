@@ -175,11 +175,8 @@ auto transient_curve(float t) -> float {
 
 inline
 auto process_transients(detail::step* step, int SR) -> void {
-	//static constexpr auto TRANSIENT_EXPONENT = 200.0f;
-	//static constexpr auto TRANSIENT_STRENGTH = 0.1f;
 	for (auto& transient : step->transients.list) {
 		if (transient.time_alive < transient.life_time) {
-			//const auto amplitude = TRANSIENT_STRENGTH * std::pow(2.0f, -TRANSIENT_EXPONENT * transient.time_alive); 
 			const auto t         = transient.time_alive / transient.life_time;
 			const auto amplitude = transient_curve(t);
 			step->R[transient.position] += amplitude / 2.0f;
