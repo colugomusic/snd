@@ -167,12 +167,21 @@ auto add_transient(tract::dsp* dsp, int position, float speed) -> void {
 }
 
 inline
+auto transient_curve(float t) -> float {
+	static constexpr auto EXP = 48;
+	// smooth curve from 0..1 with a fast attack and slow release
+	return (EXP / 2) * (std::pow(2.0f, -EXP * t) * std::sin(float(M_PI) * t));
+}
+
+inline
 auto process_transients(detail::step* step, int SR) -> void {
-	static constexpr auto TRANSIENT_EXPONENT = 200.0f;
-	static constexpr auto TRANSIENT_STRENGTH = 0.1f;
+	//static constexpr auto TRANSIENT_EXPONENT = 200.0f;
+	//static constexpr auto TRANSIENT_STRENGTH = 0.1f;
 	for (auto& transient : step->transients.list) {
 		if (transient.time_alive < transient.life_time) {
-			const auto amplitude = TRANSIENT_STRENGTH * std::pow(2.0f, -TRANSIENT_EXPONENT * transient.time_alive); 
+			//const auto amplitude = TRANSIENT_STRENGTH * std::pow(2.0f, -TRANSIENT_EXPONENT * transient.time_alive); 
+			const auto t         = transient.time_alive / transient.life_time;
+			const auto amplitude = transient_curve(t);
 			step->R[transient.position] += amplitude / 2.0f;
 			step->L[transient.position] += amplitude / 2.0f; 
 			transient.time_alive += 1.0f / (SR * 2.0f);
