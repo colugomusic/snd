@@ -45,13 +45,13 @@ struct step_input {
 };
 
 struct transient {
-	int position;
-	float time_alive;
-	float life_time;
+	int position     = 0;
+	float time_alive = 1.0f;
+	float life_time  = 0.0f;
 };
 
 struct transients { 
-	std::array<transient, 32> list;
+	std::array<transient, 16> list;
 	size_t count = 0;
 	size_t index = 0;
 };
