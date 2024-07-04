@@ -142,7 +142,7 @@ auto make_lod(mipmap::lod_index index, mipmap::channel_count channel_count, mipm
 	mipmap::lod<REP> lod;
 	lod.index    = index;
 	lod.bin_size = {int(std::pow(detail.value, index.value))};
-	lod.data     = typename mipmap::lod<REP>::data_t{static_cast<size_t>(channel_count.value), mipmap::lod<REP>::channel_t(frame_count.value)};
+	lod.data     = typename mipmap::lod<REP>::data_t{static_cast<size_t>(channel_count.value), typename mipmap::lod<REP>::channel_t(frame_count.value)};
 	return lod;
 }
 
