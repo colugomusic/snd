@@ -190,22 +190,6 @@ auto as_float(REP value, mipmap::max_source_clip max_clip) -> float {
 	return fvalue;
 }
 
-//template <typename REP> [[nodiscard]]
-//auto apply(REP value, mipmap::max_source_clip max_clip) -> REP {
-//	const auto limit = 1.0f + max_clip.value;
-//	auto fvalue = float(value);
-//	fvalue -= VALUE_SILENT<REP>();
-//	fvalue *= limit;
-//	fvalue += VALUE_SILENT<REP>();
-//	fvalue  = std::clamp(fvalue, float(VALUE_MIN<REP>()), float(VALUE_MAX<REP>()));
-//	return static_cast<REP>(fvalue);
-//}
-//
-//template <typename REP> [[nodiscard]]
-//auto apply(mipmap::frame<REP> frame, mipmap::max_source_clip max_clip) -> mipmap::frame<REP> {
-//	return { apply(frame.min.value, max_clip), apply(frame.max.value, max_clip) };
-//}
-
 // detail:
 //	lower is better quality, but uses more memory
 //	detail=0 is a regular mipmap, i.e. each level is half the size of the previous one
