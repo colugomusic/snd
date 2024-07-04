@@ -155,7 +155,7 @@ public:
 		// required size
 		auto resize(frame_t required_size) -> bool; 
 		// Read final generated mipmap data
-		auto read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame; 
+		auto read_mipmap(row_t row, float frame, float bin_size) const -> snd::mipmap::frame<>; 
 		// We are not going to do any synchronization here
 		// for the client.
 		//
@@ -409,21 +409,21 @@ auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::NonRealtimeAccess::ge
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::NonRealtimeAccess::read_mipmap(row_t row, float frame, float bin_size) const -> snd::SampleMipmap::LODFrame {
-	const auto index_a{ static_cast<frame_t>(std::floor(frame)) };
-	const auto index_b{ static_cast<frame_t>(std::ceil(frame)) };
-	const auto t{ frame - index_a }; 
-	const auto buffer_index_a{ index_a / SUB_BUFFER_SIZE };
-	const auto buffer_index_b{ index_b / SUB_BUFFER_SIZE }; 
+auto HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::NonRealtimeAccess::read_mipmap(row_t row, float frame, float bin_size) const -> snd::mipmap::frame<> {
+	const auto index_a = static_cast<frame_t>(std::floor(frame));
+	const auto index_b = static_cast<frame_t>(std::ceil(frame));
+	const auto t       = frame - index_a;
+	const auto buffer_index_a = index_a / SUB_BUFFER_SIZE;
+	const auto buffer_index_b = index_b / SUB_BUFFER_SIZE;
 	assert(buffer_index_a < SELF->critical_.buffers.size());
 	assert(buffer_index_b < SELF->critical_.buffers.size()); 
-	const auto local_frame_a{ index_a % SUB_BUFFER_SIZE };
-	const auto local_frame_b{ index_b % SUB_BUFFER_SIZE }; 
-	auto& buffer_a{ *SELF->critical_.buffers[buffer_index_a].ptr };
-	auto& buffer_b{ *SELF->critical_.buffers[buffer_index_b].ptr }; 
-	const auto frame_a{ buffer_a.non_realtime.read_mipmap(row, local_frame_a, bin_size) };
-	const auto frame_b{ buffer_b.non_realtime.read_mipmap(row, local_frame_b, bin_size) }; 
-	return snd::SampleMipmap::LODFrame::lerp(frame_a, frame_b, t);
+	const auto local_frame_a = index_a % SUB_BUFFER_SIZE;
+	const auto local_frame_b = index_b % SUB_BUFFER_SIZE ;
+	auto& buffer_a = *SELF->critical_.buffers[buffer_index_a].ptr;
+	auto& buffer_b = *SELF->critical_.buffers[buffer_index_b].ptr ;
+	const auto frame_a = buffer_a.non_realtime.read_mipmap(row, local_frame_a, bin_size);
+	const auto frame_b = buffer_b.non_realtime.read_mipmap(row, local_frame_b, bin_size);
+	return snd::mipmap::lerp(frame_a, frame_b, t);
 }
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
