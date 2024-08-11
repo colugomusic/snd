@@ -153,6 +153,7 @@ auto get_stereo_positions(fudge::particle* p, const fudge::vector_info& v, fudge
 			out.R = adjusted_channel_pos(p, v, f, 1);
 			break;
 		}
+        default: break;
 	} 
 	if (std::abs(out.R - out.L) < 0.01f * v.SR.value) {
 		out.R = out.L;
