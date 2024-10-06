@@ -17,15 +17,12 @@ template <typename T>
 struct audio_data {
 	template <typename UpdateFn>
 	auto modify(UpdateFn&& update_fn) -> void {
-		auto lock = std::unique_lock(writer_mutex_);
-		auto copy = std::make_shared<const T>(writer_data_ = update_fn(std::move(writer_data_)));
-		ptr_.modify([copy](std::shared_ptr<const T>& ptr) { ptr = copy; });
-		versions_.push_back(std::move(copy));
+		modify({writer_mutex_}, std::forward<UpdateFn>(update_fn));
 	}
 	auto set(T data) -> void {
 		auto lock = std::unique_lock(writer_mutex_);
 		auto modify_fn = [data = std::move(data)](T&&) mutable { return std::move(data); };
-		modify(modify_fn);
+		modify(std::move(lock), modify_fn);
 	}
 	auto read() const -> std::shared_ptr<const T> {
 		return *ptr_.lock_shared().get();
@@ -36,6 +33,12 @@ struct audio_data {
 		versions_.erase(std::remove_if(versions_.begin(), versions_.end(), is_garbage), versions_.end());
 	}
 private:
+	template <typename UpdateFn>
+	auto modify(std::unique_lock<std::mutex>&& lock, UpdateFn&& update_fn) -> void {
+		auto copy = std::make_shared<const T>(writer_data_ = update_fn(std::move(writer_data_)));
+		ptr_.modify([copy](std::shared_ptr<const T>& ptr) { ptr = copy; });
+		versions_.push_back(std::move(copy));
+	}
 	T writer_data_;
 	std::mutex writer_mutex_;
 	lg::lr_guarded<std::shared_ptr<const T>> ptr_;
@@ -44,6 +47,7 @@ private:
 
 template <typename T>
 struct audio_sync {
+	audio_sync() { publish(); }
 	auto gc() -> void                                         { published_model_.garbage_collect(); }
 	auto publish() -> void                                    { published_model_.set(working_model_); }
 	auto read() const -> T                                    { auto lock = std::lock_guard{mutex_}; return working_model_; }
