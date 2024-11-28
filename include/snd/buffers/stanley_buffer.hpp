@@ -12,7 +12,7 @@
 #include <optional>
 #include <memory>
 #include <vector>
-#include <stupid/stupid.hpp>
+#include <ez-extra.hpp>
 #include <snd/buffers/deferred_buffer.hpp>
 #include <snd/samples/sample_mipmap.hpp>
 
@@ -54,7 +54,7 @@ public:
 		auto process_mipmap() -> bool;
 	private:
 		StanleyBuffer* const SELF;
-		stupid::beach_ball_player<AUDIO> beach_player_;
+		ez::extra::beach_ball_player<AUDIO> beach_player_;
 		snd::mipmap::region dirty_region_{};
 	} audio;
 	// Non-realtime thread can access the buffer through here
@@ -85,7 +85,7 @@ public:
 		auto SCARY__read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void;
 	private:
 		StanleyBuffer* const SELF;
-		stupid::beach_ball_player<NON_REALTIME> beach_player_;
+		ez::extra::beach_ball_player<NON_REALTIME> beach_player_;
 		std::optional<snd::mipmap::body<>> mipmap_;
 	} non_realtime;
 	const row_t row_count;
@@ -103,7 +103,7 @@ private:
 		DeferredBuffer<float, SIZE, Allocator> buffer;
 		// Other synchronization happens via beach ball
 		struct {
-			stupid::beach_ball ball{ AUDIO };
+			ez::extra::beach_ball ball{ AUDIO };
 			struct {
 				std::vector<std::vector<uint8_t>> staging_buffers;
 				snd::mipmap::region dirty_region;
