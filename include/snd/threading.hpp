@@ -8,8 +8,8 @@ namespace snd {
 namespace th {
 
 struct message_queue_reporter {
-	auto(*error_queue_beyond_reasonable_size)() -> void;
-	auto(*warning_queue_full)() -> void;
+	std::function<void()> error_queue_beyond_reasonable_size;
+	std::function<void()> warning_queue_full;
 };
 
 template <size_t INITIAL_QUEUE_SIZE>
