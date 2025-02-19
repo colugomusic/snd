@@ -43,7 +43,7 @@ private:
 		Buffer(std::unique_ptr<buffer_t> ptr_) : ptr{ std::move(ptr_) } {}
 	}; 
 public: 
-	HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, frame_t required_size);
+	HaroldBuffer(std::shared_ptr<buffer_pool_t> buffer_pool, row_t row_count, frame_t required_size);
 	~HaroldBuffer(); 
 	// Audio thread should only access
 	// the buffer through this interface
@@ -180,7 +180,7 @@ public:
 		frame_t size_{};
 	} non_realtime; 
 private: 
-	buffer_pool_t* buffer_pool_;
+	std::shared_ptr<buffer_pool_t> buffer_pool_;
 	frame_t actual_size_{}; 
 	auto acquire_buffers(row_t row_count) -> void; 
 	struct {
@@ -191,7 +191,7 @@ private:
 };
 
 template <size_t SUB_BUFFER_SIZE, size_t ALLOC_SIZE, class Allocator>
-HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::HaroldBuffer(buffer_pool_t* buffer_pool, row_t row_count, frame_t required_size)
+HaroldBuffer<SUB_BUFFER_SIZE, ALLOC_SIZE, Allocator>::HaroldBuffer(std::shared_ptr<buffer_pool_t> buffer_pool, row_t row_count, frame_t required_size)
 	: non_realtime { this, required_size }
 	, buffer_pool_{ buffer_pool }
 {
