@@ -235,7 +235,7 @@ auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::process_mipmap() -> bool
 	} 
 	const auto num_dirty_frames = SELF->critical_.beach.mipmap.dirty_region.end - SELF->critical_.beach.mipmap.dirty_region.beg; 
 	for (row_t row{}; row < SELF->row_count; row++) {
-		const auto writer = [=](uint8_t* data) {
+		const auto writer = [this, row, num_dirty_frames](uint8_t* data) {
 			for (frame_t i{}; i < num_dirty_frames; i++) {
 				data[i] = SELF->critical_.beach.mipmap.staging_buffers[row][i + SELF->critical_.beach.mipmap.dirty_region.beg];
 			}
