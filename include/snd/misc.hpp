@@ -5,6 +5,7 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
