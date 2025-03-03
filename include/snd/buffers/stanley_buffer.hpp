@@ -2,7 +2,7 @@
 
 //
 // required libraries:
-//	- colugomusic/stupid
+//	- colugomusic/ez
 //
 
 #include <array>
