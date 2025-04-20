@@ -23,6 +23,7 @@ struct Spec
 	T amp { 1 };
 	T slope { 0.5 };
 	T threshold { 0.5 };
+	auto operator<=>(const Spec&) const = default;
 };
 
 template <class T>

@@ -23,6 +23,7 @@ struct Spec
 {
 	T points[2];
 	Mode mode;
+	auto operator<=>(const Spec&) const = default;
 };
 
 template <class T>
