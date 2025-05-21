@@ -20,6 +20,12 @@ namespace snd {
 
 static constexpr auto STANLEY_BUFFER_DEFAULT_SIZE{ 1 << 14 };
 
+static constexpr auto MIPMAP_AUDIO_CATCHER = ez::catcher{0};
+static constexpr auto MIPMAP_UI_CATCHER    = ez::catcher{1};
+using mipmap_beach_ball   = ez::beach_ball<ez::player_count{2}>;
+using mipmap_player_audio = mipmap_beach_ball::player<MIPMAP_AUDIO_CATCHER.v>;
+using mipmap_player_ui    = mipmap_beach_ball::player<MIPMAP_UI_CATCHER.v>;
+
 //
 // A buffer of floating point audio data and a mipmap for
 // displaying it visually.
@@ -34,8 +40,6 @@ struct StanleyBuffer {
 private:
 	friend struct AudioAccess;
 	friend struct NonRealtimeAccess;
-	static constexpr auto NON_REALTIME = 0;
-	static constexpr auto AUDIO        = 1;
 	template <class T> static constexpr auto is_power_of_two(T x) { return (SIZE & (SIZE -1)) == 0; }
 	static_assert(is_power_of_two(SIZE));
 public:
@@ -54,7 +58,7 @@ public:
 		auto process_mipmap() -> bool;
 	private:
 		StanleyBuffer* const SELF;
-		ez::beach_ball_player<AUDIO> beach_player_;
+		mipmap_player_audio beach_player_;
 		snd::mipmap::region dirty_region_{};
 	} audio;
 	// Non-realtime thread can access the buffer through here
@@ -85,7 +89,7 @@ public:
 		auto SCARY__read(row_t row, frame_t frame_beg, frame_t frame_count, std::function<void(const float*)> reader) const -> void;
 	private:
 		StanleyBuffer* const SELF;
-		ez::beach_ball_player<NON_REALTIME> beach_player_;
+		mipmap_player_ui beach_player_;
 		std::optional<snd::mipmap::body<>> mipmap_;
 	} non_realtime;
 	const row_t row_count;
@@ -103,7 +107,7 @@ private:
 		DeferredBuffer<float, SIZE, Allocator> buffer;
 		// Other synchronization happens via beach ball
 		struct {
-			ez::beach_ball ball{ AUDIO };
+			mipmap_beach_ball ball{ MIPMAP_AUDIO_CATCHER };
 			struct {
 				std::vector<std::vector<uint8_t>> staging_buffers;
 				snd::mipmap::region dirty_region;
@@ -181,7 +185,7 @@ auto StanleyBuffer<SIZE, Allocator>::AudioAccess::process_mipmap() -> bool {
 	} 
 	SELF->critical_.beach.mipmap.dirty_region = dirty_region_;
 	dirty_region_ = {};
-	beach_player_.throw_ball(); 
+	beach_player_.throw_to<MIPMAP_UI_CATCHER>();
 	return true;
 }
 
@@ -230,7 +234,7 @@ template <size_t SIZE, class Allocator>
 auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::process_mipmap() -> bool {
 	if (!beach_player_.ensure()) return false; 
 	if (SELF->critical_.beach.mipmap.dirty_region.beg >= SELF->critical_.beach.mipmap.dirty_region.end) {
-		beach_player_.throw_ball();
+		beach_player_.throw_to<MIPMAP_AUDIO_CATCHER>();
 		return true;
 	} 
 	const auto num_dirty_frames = SELF->critical_.beach.mipmap.dirty_region.end - SELF->critical_.beach.mipmap.dirty_region.beg; 
@@ -244,7 +248,7 @@ auto StanleyBuffer<SIZE, Allocator>::NonRealtimeAccess::process_mipmap() -> bool
 	} 
 	snd::mipmap::update(&*mipmap_, SELF->critical_.beach.mipmap.dirty_region);
 	SELF->critical_.beach.mipmap.dirty_region = {};
-	beach_player_.throw_ball(); 
+	beach_player_.throw_to<MIPMAP_AUDIO_CATCHER>();
 	return true;
 }
 
