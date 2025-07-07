@@ -98,12 +98,8 @@ auto add_work_to_do(progress_reporter<ReportProgressFn>* reporter, float work) -
 
 template <typename ReportProgressFn>
 auto complete_work(progress_reporter<ReportProgressFn>* reporter, float work) -> void {
-	const auto quantized_work_done_prv = size_t(reporter->work_done * 100);
 	reporter->work_done += work;
-	const auto quantized_work_done_now = size_t(reporter->work_done * 100);
-	if (quantized_work_done_now > quantized_work_done_prv) {
-		reporter->report_progress(reporter->work_done / reporter->total_work);
-	}
+	reporter->report_progress(reporter->work_done / reporter->total_work);
 }
 
 template <size_t BufferSize, typename CB> inline
