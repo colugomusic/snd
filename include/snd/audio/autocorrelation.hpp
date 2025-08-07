@@ -297,8 +297,9 @@ auto write_estimated_sizes(poka::work* work, ProgressReporter* progress_reporter
 }
 
 inline
-auto no_cycles(poka::output* out) -> void {
+auto no_cycles(const poka::work& work, poka::output* out) -> void {
 	static constexpr auto DEFAULT_SIZE = 44100.0f;
+	out->frames.estimated_size.resize(work.frames.raw.size());
 	std::fill(out->frames.estimated_size.begin(), out->frames.estimated_size.end(), DEFAULT_SIZE);
 }
 
@@ -306,6 +307,7 @@ inline
 auto one_cycle(const poka::work& work, poka::output* out) -> void {
 	const auto cycle_range = work.cycle_range.front();
 	const auto size   = float(cycle_range.end - cycle_range.beg);
+	out->frames.estimated_size.resize(work.frames.raw.size());
 	std::fill(out->frames.estimated_size.begin(), out->frames.estimated_size.end(), size);
 }
 
@@ -404,7 +406,7 @@ auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressRepor
 template <mode Mode, typename ShouldAbortFn, typename ProgressReporter> [[nodiscard]] inline
 auto autocorrelation(poka::work* work, ShouldAbortFn should_abort, ProgressReporter* progress_reporter, size_t depth, size_t SR, poka::output* out) -> poka::result {
 	if (work->cycle_info.empty()) {
-		no_cycles(out);
+		no_cycles(*work, out);
 		complete_work(progress_reporter, WORK_COST_AUTOCORRELATION);
 		return poka::result::ok;
 	}
