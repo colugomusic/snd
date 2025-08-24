@@ -49,4 +49,8 @@ target_sources(snd INTERFACE
 		include/snd/transport/frame_position.hpp
 )
 target_compile_features(snd INTERFACE cxx_std_20)
-install(TARGETS snd FILE_SET HEADERS)
+include(CMakePackageConfigHelpers)
+install(TARGETS snd EXPORT snd-targets FILE_SET HEADERS)
+install(EXPORT snd-targets FILE snd-targets.cmake NAMESPACE snd:: DESTINATION lib/cmake/snd)
+configure_package_config_file("${CMAKE_CURRENT_LIST_DIR}/cmake/snd-config.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/snd-config.cmake" INSTALL_DESTINATION lib/cmake/snd)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/snd-config.cmake" DESTINATION lib/cmake/snd)
