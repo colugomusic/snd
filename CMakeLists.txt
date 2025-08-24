@@ -48,6 +48,9 @@ target_sources(snd INTERFACE
 		include/snd/curve/curve.hpp
 		include/snd/curve/schlick.hpp
 		include/snd/curve/tilt.hpp
+		include/snd/storage/circular_buffer.hpp
+		include/snd/storage/frame_data.hpp
+		include/snd/storage/interleaving.hpp
 		include/snd/transport/frame_position.hpp
 )
 target_compile_features(snd INTERFACE cxx_std_20)
