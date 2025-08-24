@@ -41,6 +41,8 @@ target_sources(snd INTERFACE
 		include/snd/audio/filter/tract.hpp
 		include/snd/audio/filter/serial/2-pole.hpp
 		include/snd/audio/filter/serial/2-pole_mono.hpp
+		include/snd/audio/ringmod/ring_modulator.hpp
+		include/snd/audio/saturator/moron_saturator.hpp
 		include/snd/clock/clock_divider.hpp
 		include/snd/control/smoother.hpp
 		include/snd/curve/curve.hpp
