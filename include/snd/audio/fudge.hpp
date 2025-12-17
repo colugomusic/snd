@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../ease.hpp"
+#include "../frame-pos.hpp"
 #include "../misc.hpp"
 #include "autocorrelation.hpp"
-#include "frame-pos.hpp"
 #include <array>
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
