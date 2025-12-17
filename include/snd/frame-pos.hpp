@@ -6,6 +6,12 @@
 namespace snd {
 
 struct frame_pos {
+	frame_pos() = default;
+	frame_pos(double v) : v{v} {}
+	frame_pos(const frame_pos&) = default;
+	frame_pos& operator=(const frame_pos&) = default;
+	frame_pos(frame_pos&&) noexcept = default;
+	frame_pos& operator=(frame_pos&&) noexcept = default;
 	operator double() const { return v; }
 	[[nodiscard]] friend auto operator<=>(const frame_pos&, const frame_pos&) = default;
 	[[nodiscard]] friend auto operator-(frame_pos a, double b) -> frame_pos { return frame_pos{a.v - b}; }
