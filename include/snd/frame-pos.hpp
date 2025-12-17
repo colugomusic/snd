@@ -18,10 +18,10 @@ struct frame_pos {
 	[[nodiscard]] friend auto operator+(frame_pos a, double b) -> frame_pos { return frame_pos{a.v + b}; }
 	[[nodiscard]] friend auto operator*(frame_pos a, double b) -> frame_pos { return frame_pos{a.v * b}; }
 	[[nodiscard]] friend auto operator/(frame_pos a, double b) -> frame_pos { return frame_pos{a.v / b}; }
-	[[nodiscard]] friend auto operator-=(frame_pos& a, double b) -> frame_pos& { a.v -= b; return a; }
-	[[nodiscard]] friend auto operator+=(frame_pos& a, double b) -> frame_pos& { a.v += b; return a; }
-	[[nodiscard]] friend auto operator*=(frame_pos& a, double b) -> frame_pos& { a.v *= b; return a; }
-	[[nodiscard]] friend auto operator/=(frame_pos& a, double b) -> frame_pos& { a.v /= b; return a; }
+	friend auto operator-=(frame_pos& a, double b) -> frame_pos& { a.v -= b; return a; }
+	friend auto operator+=(frame_pos& a, double b) -> frame_pos& { a.v += b; return a; }
+	friend auto operator*=(frame_pos& a, double b) -> frame_pos& { a.v *= b; return a; }
+	friend auto operator/=(frame_pos& a, double b) -> frame_pos& { a.v /= b; return a; }
 	[[nodiscard]] static auto fn_plus(double v)  { return [v](frame_pos x) { return x + v; }; }
 	[[nodiscard]] static auto fn_minus(double v) { return [v](frame_pos x) { return x - v; }; }
 	[[nodiscard]] static auto fn_mult(double v)  { return [v](frame_pos x) { return x * v; }; }
@@ -69,14 +69,14 @@ struct frame_vec {
 	[[nodiscard]] friend auto operator+(double v, frame_vec<N> x) -> frame_vec<N> { return update(x, frame_pos::fn_plus(v)); }
 	[[nodiscard]] friend auto operator*(double v, frame_vec<N> x) -> frame_vec<N> { return update(x, frame_pos::fn_mult(v)); }
 	[[nodiscard]] friend auto operator/(double v, frame_vec<N> x) -> frame_vec<N> { return update(x, frame_pos::fn_div_from(v)); }
-	[[nodiscard]] friend auto operator-=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_minus(v)); return x; }
-	[[nodiscard]] friend auto operator+=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_plus(v)); return x; }
-	[[nodiscard]] friend auto operator*=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_mult(v)); return x; }
-	[[nodiscard]] friend auto operator/=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_div(v)); return x; }
-	[[nodiscard]] friend auto operator-=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_minus_from(v)); return x; }
-	[[nodiscard]] friend auto operator+=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_plus(v)); return x; }
-	[[nodiscard]] friend auto operator*=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_mult(v)); return x; }
-	[[nodiscard]] friend auto operator/=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_div_from(v)); return x; }
+	friend auto operator-=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_minus(v)); return x; }
+	friend auto operator+=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_plus(v)); return x; }
+	friend auto operator*=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_mult(v)); return x; }
+	friend auto operator/=(frame_vec<N>& x, double v) -> frame_vec<N>& { x = update(x, frame_pos::fn_div(v)); return x; }
+	friend auto operator-=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_minus_from(v)); return x; }
+	friend auto operator+=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_plus(v)); return x; }
+	friend auto operator*=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_mult(v)); return x; }
+	friend auto operator/=(double v, frame_vec<N>& x) -> frame_vec<N>& { x = update(x, frame_pos::fn_div_from(v)); return x; }
 private:
 	std::array<frame_pos, N> v;
 };
@@ -102,14 +102,14 @@ struct frame_vec_array {
 	[[nodiscard]] friend auto operator+=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_plus(v)); return x; }
 	[[nodiscard]] friend auto operator*=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_mult(v)); return x; }
 	[[nodiscard]] friend auto operator/=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_div_from(v)); return x; }
-	[[nodiscard]] friend auto operator-=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_minus(v)); return x; }
-	[[nodiscard]] friend auto operator+=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_plus(v)); return x; }
-	[[nodiscard]] friend auto operator*=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_mult(v)); return x; }
-	[[nodiscard]] friend auto operator/=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_div(v)); return x; }
-	[[nodiscard]] friend auto operator-=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_minus_from(v)); return x; }
-	[[nodiscard]] friend auto operator+=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_plus(v)); return x; }
-	[[nodiscard]] friend auto operator*=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_mult(v)); return x; }
-	[[nodiscard]] friend auto operator/=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_div_from(v)); return x; }
+	friend auto operator-=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_minus(v)); return x; }
+	friend auto operator+=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_plus(v)); return x; }
+	friend auto operator*=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_mult(v)); return x; }
+	friend auto operator/=(frame_vec_array<N0, N1>& x, double v) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_div(v)); return x; }
+	friend auto operator-=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_minus_from(v)); return x; }
+	friend auto operator+=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_plus(v)); return x; }
+	friend auto operator*=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_mult(v)); return x; }
+	friend auto operator/=(double v, frame_vec_array<N0, N1>& x) -> frame_vec_array<N0, N1>& { x = update(x, frame_pos::fn_div_from(v)); return x; }
 private:
 	std::array<frame_vec<N0>, N1> v;
 };
