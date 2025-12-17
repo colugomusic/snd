@@ -3,6 +3,7 @@
 #include "../ease.hpp"
 #include "../misc.hpp"
 #include "autocorrelation.hpp"
+#include "frame-pos.hpp"
 #include <array>
 #pragma warning(push, 0)
 #include <DSP/MLDSPOps.h>
@@ -26,7 +27,7 @@ struct ff { ml::DSPVector value; };
 struct frame_increment { float value; };
 struct harmonic_ratio { ml::DSPVector value; };
 struct sample_frame_count { size_t value; };
-struct sample_position { snd::transport::DSPVectorFramePosition value; };
+struct sample_position { snd::frame_vec<64> value; };
 struct size { ml::DSPVector value; };
 struct spread { ml::DSPVector value; };
 struct stereo_frame { float L = 0.0f; float R = 0.0f; };
