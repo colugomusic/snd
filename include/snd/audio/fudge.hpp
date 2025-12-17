@@ -179,7 +179,7 @@ auto trigger_next_grain(fudge::particle* p, const fudge::vector_info& v, fudge::
 	constexpr auto MIN_GRAIN_SIZE = 3.0f;
 	constexpr auto MAX_WINDOW_SIZE = 4096.0f;
 	p->flip_flop       = flip(p->flip_flop);
-	const auto fade_in = v.sample_position.value[f.idx] > 0;
+	const auto fade_in = v.sample_position.value[f.idx] > frame_pos{0};
 	stereo_frame beg;
 	if (v.channel_count.value > 1) {
 		beg = get_stereo_positions(p, v, f, adjust);
