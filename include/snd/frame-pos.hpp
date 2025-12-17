@@ -34,6 +34,8 @@ template <size_t N>
 struct frame_vec {
 	[[nodiscard]] auto operator[](size_t index) -> frame_pos&             { return v.at(index); }
 	[[nodiscard]] auto operator[](size_t index) const -> const frame_pos& { return v.at(index); }
+	[[nodiscard]] auto at(size_t index) -> frame_pos&             { return v.at(index); }
+	[[nodiscard]] auto at(size_t index) const -> const frame_pos& { return v.at(index); }
 	[[nodiscard]] friend
 	auto update(frame_vec<N> x, auto fn) -> frame_vec<N> {
 		std::ranges::for_each(x.v, [fn](frame_pos& x) { x = fn(x); });
@@ -70,6 +72,8 @@ template <size_t N0, size_t N1>
 struct frame_vec_array {
 	[[nodiscard]] auto operator[](size_t index) -> frame_vec<N0>&             { return v.at(index); }
 	[[nodiscard]] auto operator[](size_t index) const -> const frame_vec<N0>& { return v.at(index); }
+	[[nodiscard]] auto at(size_t index) -> frame_vec<N0>&             { return v.at(index); }
+	[[nodiscard]] auto at(size_t index) const -> const frame_vec<N0>& { return v.at(index); }
 	[[nodiscard]] friend
 	auto update(frame_vec_array<N0, N1> x, auto fn) -> frame_vec_array<N0, N1> {
 		std::ranges::for_each(x.v, [fn](frame_vec<N0>& row) {
