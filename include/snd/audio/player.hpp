@@ -168,6 +168,9 @@ auto play(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
 		out.row(1) = out.row(0);
 	}
 	impl->audio.position += kFloatsPerDSPVector;
+	if (impl->audio.source.num_frames) {
+		impl->audio.progress = float(impl->audio.position) / (*impl->audio.source.num_frames - 1);
+	}
 	const auto minimum_frames = std::uint64_t(kFloatsPerDSPVector * 1000);
 	if (!impl->audio.frames_requested && (current_frames_available - kFloatsPerDSPVector) < minimum_frames) {
 		send(impl, from_audio::i_need_more_frames{});
