@@ -23,9 +23,10 @@ struct stream_player {
 		virtual auto on_progress(float) -> void = 0;
 	};
 	struct source_t {
-		// number of frames after SR conversion, not necessarily
+		// Number of frames after SR conversion, not necessarily
 		// equal to the number of frames in the file
-		std::uint64_t num_frames     = 0;
+		// Unset for MP3 files.
+		std::optional<std::uint64_t> num_frames = 0;
 		std::uint64_t start_position = 0;
 		int num_channels             = 0;
 		int SR                       = 0;
@@ -123,9 +124,11 @@ auto begin_playing(impl::stream_player_t* impl) -> void {
 	impl->audio.state            = audio_t::state_t::playing;
 	impl->audio.source           = impl->audio.play_requested->source;
 	impl->audio.position         = impl->audio.source.start_position;
-	impl->audio.progress         = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
 	impl->audio.frames_requested = false;
 	impl->audio.play_requested   = std::nullopt;
+	if (impl->audio.source.num_frames) {
+		impl->audio.progress = float(impl->audio.position) / (*impl->audio.source.num_frames - 1);
+	}
 }
 
 inline
@@ -152,7 +155,9 @@ auto play(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
 			impl->audio.source_buffer->read(out.row(c).getBuffer(), current_frames_available);
 		}
 		impl->audio.position += current_frames_available;
-		impl->audio.progress = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
+		if (impl->audio.source.num_frames) {
+			impl->audio.progress = float(impl->audio.position) / (*impl->audio.source.num_frames - 1);
+		}
 		finish_playing(impl);
 		return out;
 	}
@@ -163,8 +168,7 @@ auto play(impl::stream_player_t* impl) -> ml::DSPVectorArray<2> {
 		out.row(1) = out.row(0);
 	}
 	impl->audio.position += kFloatsPerDSPVector;
-	impl->audio.progress = float(impl->audio.position) / (impl->audio.source.num_frames - 1);
-	const auto minimum_frames = std::min(std::uint64_t(kFloatsPerDSPVector * 1000), impl->audio.source.num_frames);
+	const auto minimum_frames = std::uint64_t(kFloatsPerDSPVector * 1000);
 	if (!impl->audio.frames_requested && (current_frames_available - kFloatsPerDSPVector) < minimum_frames) {
 		send(impl, from_audio::i_need_more_frames{});
 		impl->audio.frames_requested = true;
