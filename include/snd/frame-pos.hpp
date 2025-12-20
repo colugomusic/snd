@@ -42,6 +42,8 @@ struct frame_vec {
 	[[nodiscard]] auto at(size_t index) const -> const frame_pos& { return v.at(index); }
 	[[nodiscard]] auto data() -> frame_pos*             { return v.data(); }
 	[[nodiscard]] auto data() const -> const frame_pos* { return v.data(); }
+	[[nodiscard]] auto cbegin() const { return v.data().cbegin(); }
+	[[nodiscard]] auto cend() const { return v.data().cend(); }
 	auto set(size_t index, frame_pos v) -> void { at(index) = v; }
 	[[nodiscard]] friend
 	auto update(frame_vec<N> x, auto fn) -> frame_vec<N> {
