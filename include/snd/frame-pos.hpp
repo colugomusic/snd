@@ -14,8 +14,8 @@ struct frame_pos {
 	frame_pos& operator=(frame_pos&&) noexcept = default;
 	operator double() const { return v; }
 	[[nodiscard]] friend auto operator<=>(const frame_pos&, const frame_pos&) = default;
-	[[nodiscard]] friend auto operator<=(double a, const frame_pos& b) -> bool { return a <= b.v; }
-	[[nodiscard]] friend auto operator>=(const frame_pos& a, double b) -> bool { return a.v >= b; }
+	[[nodiscard]] friend auto operator<=>(const frame_pos& a, double b) { return a.v <=> b; }
+	[[nodiscard]] friend auto operator<=>(double a, const frame_pos& b) { return a <=> b.v; }
 	[[nodiscard]] friend auto operator-(frame_pos a, double b) -> frame_pos { return frame_pos{a.v - b}; }
 	[[nodiscard]] friend auto operator+(frame_pos a, double b) -> frame_pos { return frame_pos{a.v + b}; }
 	[[nodiscard]] friend auto operator*(frame_pos a, double b) -> frame_pos { return frame_pos{a.v * b}; }
