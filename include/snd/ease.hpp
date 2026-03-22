@@ -69,12 +69,12 @@ auto out_in(T t, T strength) -> T {
 }
 
 template <class T> [[nodiscard]] constexpr
-auto ease(T x, easing::mode mode) -> T {
+auto ease(T x, easing::mode mode, T strength) -> T {
 	switch (mode) {
-		case easing::mode::in:     { return in(x); }
-		case easing::mode::out:    { return out(x); }
-		case easing::mode::in_out: { return in_out(x); }
-		case easing::mode::out_in: { return out_in(x); }
+		case easing::mode::in:     { return in(x, strength); }
+		case easing::mode::out:    { return out(x, strength); }
+		case easing::mode::in_out: { return in_out(x, strength); }
+		case easing::mode::out_in: { return out_in(x, strength); }
 		default:                   { throw std::invalid_argument("Invalid easing mode"); }
 	}
 }
