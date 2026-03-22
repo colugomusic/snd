@@ -33,18 +33,18 @@ inline T value(T x, const Spec<T>& spec)
 	{
 		case Mode::InOut:
 		{
-			return snd::lerp(spec.points[0], spec.points[1], snd::ease::quadratic::in_out(x));
+			return snd::lerp(spec.points[0], spec.points[1], snd::easing::quadratic::in_out(x));
 		}
 
 		case Mode::Over:
 		{
 			if (spec.points[0] < spec.points[1])
 			{
-				return snd::lerp(spec.points[0], spec.points[1], snd::ease::quadratic::out(x));
+				return snd::lerp(spec.points[0], spec.points[1], snd::easing::quadratic::out(x));
 			}
 			else
 			{
-				return snd::lerp(spec.points[1], spec.points[0], snd::ease::quadratic::out(T(1) - x));
+				return snd::lerp(spec.points[1], spec.points[0], snd::easing::quadratic::out(T(1) - x));
 			}
 		}
 
@@ -52,11 +52,11 @@ inline T value(T x, const Spec<T>& spec)
 		{
 			if (spec.points[0] < spec.points[1])
 			{
-				return snd::lerp(spec.points[0], spec.points[1], snd::ease::quadratic::in(x));
+				return snd::lerp(spec.points[0], spec.points[1], snd::easing::quadratic::in(x));
 			}
 			else
 			{
-				return snd::lerp(spec.points[1], spec.points[0], snd::ease::quadratic::in(T(1) - x));
+				return snd::lerp(spec.points[1], spec.points[0], snd::easing::quadratic::in(T(1) - x));
 			}
 		}
 
@@ -73,7 +73,7 @@ inline constexpr Spec<T> make_spec(float amp, float tilt, Mode mode)
 {
 	Spec<float> spec{};
 
-	tilt = snd::ease::quadratic::out_in(tilt);
+	tilt = snd::easing::quadratic::out_in(tilt);
 
 	spec.points[0] = std::min(1.0f, 2.0f * (1.0f - tilt)) * amp;
 	spec.points[1] = std::min(1.0f, 2.0f * tilt) * amp;

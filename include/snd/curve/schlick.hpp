@@ -55,7 +55,7 @@ inline T derivative(T x, const Spec<T>& spec)
 template <class T>
 inline T calculate_slope(T x)
 {
-	x = ease::quadratic::out_in(x);
+	x = easing::quadratic::out_in(x);
 
 	return std::pow(T(3), (T(10) * (x - T(0.5))));
 }

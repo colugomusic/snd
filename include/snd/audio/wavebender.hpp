@@ -121,10 +121,10 @@ auto start_fade_in(Channel* c, const FrameReadParams& params) -> void {
 auto window(float x, float r = 0.5f) -> float {
 	const auto top = 1.0f - r;
 	if (x < r) {
-		return snd::ease::parametric::in_out(x * (1.0f / r));
+		return snd::easing::parametric::in_out(x * (1.0f / r));
 	}
 	else if (x > top) {
-		return 1.0f - snd::ease::parametric::in_out((x - top) * (1.0f / r));
+		return 1.0f - snd::easing::parametric::in_out((x - top) * (1.0f / r));
 	}
 	else {
 		return 1.0f;
@@ -156,7 +156,7 @@ auto read(const Channel::Span& span, float pos) -> float {
 
 [[nodiscard]] inline
 auto do_xfade(Channel* c, const FrameReadParams& params) -> float {
-	const auto x = snd::ease::quadratic::in_out(float(c->xfade.index) / (c->xfade.length - 1));
+	const auto x = snd::easing::quadratic::in_out(float(c->xfade.index) / (c->xfade.length - 1));
 	auto source_value = read(c->source.span, apply_tilt(c->source.frame, params.tilt, params.spike, c->source.span.size));
 	auto target_value = read(c->target.span, apply_tilt(c->target.frame, params.tilt, params.spike, c->target.span.size));
 	const auto value = snd::lerp(source_value, target_value, x);
@@ -229,7 +229,7 @@ auto do_read(Channel* c, const FrameReadParams& params, float in) -> float {
 	}
 	float value = do_wet(c, params);
 	if (c->fade_in.active) {
-		const auto amp = snd::ease::quadratic::in_out(float(c->fade_in.index++) / c->fade_in.length);
+		const auto amp = snd::easing::quadratic::in_out(float(c->fade_in.index++) / c->fade_in.length);
 		value = snd::lerp(in, value, amp);
 		if (c->fade_in.index >= c->fade_in.length) {
 			c->fade_in.active = false;

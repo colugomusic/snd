@@ -60,7 +60,7 @@ void MoronSaturator<ROWS>::calculate(const ml::DSPVectorArray<ROWS>& drive, ml::
 {
 	auto drive_adjust = drive * 0.99f;
 	auto softness = 0.5f - (drive_adjust / 2.0f);
-	auto ceiling_af = 1.0f - (ease::quadratic::out(drive_adjust) / 2.0f);
+	auto ceiling_af = 1.0f - (easing::quadratic::out(drive_adjust) / 2.0f);
 
 	*c = ml::sqrt(ml::max(ml::DSPVectorArray<ROWS>(0.001f), ml::pow(ml::DSPVectorArray<ROWS>(softness), ml::DSPVectorArray<ROWS>(4.0f))) * 16.0f);
 

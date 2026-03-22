@@ -283,14 +283,14 @@ auto process(fudge::particle* p, const fudge::vector_info& v, fudge::frame_info 
 		}
 		if (grain.frame < grain.window) {
 			if (grain.fade_in) {
-				grain.frame_amp = ease::quadratic::in_out(1.f - ((grain.window - grain.frame) / grain.window)); 
+				grain.frame_amp = easing::quadratic::in_out(1.f - ((grain.window - grain.frame) / grain.window)); 
 				float other_grain_duck = 1.f - grain.frame_amp; 
 				detail::other_grain(p, grain_idx).duck = other_grain_duck;
 			}
 		} 
 		float self_duck = 1.f; 
 		if (grain.frame > grain.size - grain.window) {
-			self_duck = ease::quadratic::in_out(1.f - ((grain.frame - (grain.size - grain.window)) / grain.window));
+			self_duck = easing::quadratic::in_out(1.f - ((grain.frame - (grain.size - grain.window)) / grain.window));
 		} 
 		auto final_duck = std::min(grain.duck, self_duck);
 		auto overall_amp = grain.frame_amp * final_duck * v.amp.value[f.idx];
