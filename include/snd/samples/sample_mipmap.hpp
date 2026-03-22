@@ -14,6 +14,8 @@ namespace mipmap {
 // Mipmap representation of audio data, intended for waveform rendering,
 // but also useful for audio analysis.
 //
+// I don't use this code anymore. It's deprecated in favor of github.com/colugomusic/ads
+//
 // All memory is allocated in mipmap::make().
 //
 // You can call write() in the audio thread if you're feeling adventurous

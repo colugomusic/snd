@@ -1,0 +1,24 @@
+{
+	"version": 10,
+	"configurePresets": [
+		{
+			"name": "cfg-base",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+				"CMAKE_POSITION_INDEPENDENT_CODE": "ON"
+			}
+		},
+		{
+			"name": "cfg-windows-ninja-cl",
+			"displayName": "Windows: Ninja (cl.exe)",
+			"hidden": true,
+			"inherits": "cfg-base",
+			"generator": "Ninja",
+			"cacheVariables": {
+				"BUILD_TESTING": "ON",
+				"CMAKE_TOOLCHAIN_FILE": "toolchain-windows-cl.cmake"
+			}
+		}
+	]
+}

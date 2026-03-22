@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 project(snd)
+enable_testing()
 add_library(snd INTERFACE)
 add_library(snd::snd ALIAS snd)
 target_sources(snd INTERFACE
@@ -55,6 +56,10 @@ target_sources(snd INTERFACE
 		include/snd/transport/frame_position.hpp
 )
 target_compile_features(snd INTERFACE cxx_std_20)
+target_compile_definitions(snd INTERFACE _USE_MATH_DEFINES)
+if (BUILD_TESTING)
+	add_subdirectory(test)
+endif()
 include(CMakePackageConfigHelpers)
 install(TARGETS snd EXPORT snd-targets FILE_SET HEADERS)
 install(EXPORT snd-targets FILE snd-targets.cmake NAMESPACE snd:: DESTINATION lib/cmake/snd)

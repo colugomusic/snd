@@ -1,3 +1,6 @@
 .DS_Store
 .vscode/settings.json
 *.swp
+CMakeUserPresets.json
+neovim.json
+.clangd
