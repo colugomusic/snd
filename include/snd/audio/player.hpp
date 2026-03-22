@@ -1,5 +1,7 @@
 #pragma once
 
+// now deprecated in favor of github.com/colugomusic/afs
+
 #ifdef SND_WITH_MOODYCAMEL
 
 #include "../threading.hpp"
