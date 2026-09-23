@@ -144,6 +144,11 @@ auto get_stereo_positions(fudge::particle* p, const fudge::vector_info& v, fudge
 			out.R = adjusted_channel_pos(p, v, f, 1);
 			break;
 		} 
+		case channel_mode::stereo_swap: {
+			out.L = adjusted_channel_pos(p, v, f, 1);
+			out.R = adjusted_channel_pos(p, v, f, 0);
+			break;
+		} 
 		case channel_mode::left: {
 			out.L = adjusted_channel_pos(p, v, f, 0);
 			out.R = adjusted_channel_pos(p, v, f, 0);
