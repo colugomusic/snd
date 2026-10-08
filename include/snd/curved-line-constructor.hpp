@@ -28,7 +28,7 @@ template <typename T> struct is_std_list_of_builder_point : std::false_type {};
 template <typename Allocator> struct is_std_list_of_builder_point<std::list<builder_point, Allocator>> : std::true_type {};
 
 template <typename T>
-concept std_list_of_builder_point = is_std_list_of_builder_point<T>::value;
+concept std_list_of_builder_point = is_std_list_of_builder_point<std::remove_reference_t<T>>::value;
 
 auto fn_compare(float resolution) {
 	return [resolution](float y_01_beg, float y_01_at_x, float y_01_end, float x_01) {
