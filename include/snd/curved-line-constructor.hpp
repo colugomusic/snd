@@ -114,7 +114,7 @@ template <
 	get_value_fn GetValueFn,
 	typename TemporaryAllocator
 >
-auto constuct(GetValueFn fn_get_value, float from, float to, XY<float> resolution, std::output_iterator<XY<float>> auto out, TemporaryAllocator& tmp_alloc) -> void {
+auto construct(GetValueFn fn_get_value, float from, float to, XY<float> resolution, std::output_iterator<XY<float>> auto out, TemporaryAllocator& tmp_alloc) -> void {
 	auto list            = std::list<builder_point, TemporaryAllocator>{tmp_alloc};
 	const auto beg       = list.insert(list.end(), make_beg_point(fn_get_value, from));
 	const auto end       = list.insert(list.end(), make_end_point(fn_get_value, to, resolution.x));
