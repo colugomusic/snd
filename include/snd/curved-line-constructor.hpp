@@ -118,7 +118,9 @@ auto add_detail(std::list<builder_point, TemporaryAllocator> points, GetValueFn 
 // [resolution]: Basically specifies how detailed the line is. If drawing the line visually, [resolution] should be the rendering area of the line segment in pixels.
 // [tmp_list]: You need to pass in your own empty std::list<snd::curved_line_constructor::builder_point, Alloc> to be used internally for the construction process. This is so that you can use your own special allocator for the temporary memory allocations.
 // [out]: Output iterator for the final line points scaled to the resolution.
-auto construct(get_value_fn auto fn_get_value, float from, float to, XY<float> resolution, std_list_of_builder_point auto&& tmp_list, std::output_iterator<XY<float>> auto out) -> void {
+template <typename TmpList>
+requires std_list_of_builder_point<TmpList>
+auto construct(get_value_fn auto fn_get_value, float from, float to, XY<float> resolution, TmpList&& tmp_list, std::output_iterator<XY<float>> auto out) -> void {
 	const auto beg       = tmp_list.insert(tmp_list.end(), make_beg_point(fn_get_value, from));
 	const auto end       = tmp_list.insert(tmp_list.end(), make_end_point(fn_get_value, to, resolution.x));
 	const auto max_depth = static_cast<int>(std::pow(resolution.x, ONE_THIRD));
