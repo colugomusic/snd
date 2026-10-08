@@ -5,7 +5,6 @@
 #include <cmath>
 #include <list>
 #include <ranges>
-#include <vector>
 
 namespace snd::curved_line_constructor {
 
