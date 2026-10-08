@@ -5,6 +5,7 @@
 #include <cmath>
 #include <list>
 #include <ranges>
+#include <vector>
 
 namespace snd::curved_line_constructor {
 
@@ -22,6 +23,12 @@ template <typename Fn>
 concept get_value_fn = requires(Fn fn, float x) {
 	{ fn(x) } -> std::convertible_to<float>;
 };
+
+template <typename T> struct is_std_list_of_builder_point : std::false_type {};
+template <typename Allocator> struct is_std_list_of_builder_point<std::list<builder_point, Allocator>> : std::true_type {};
+
+template <typename T>
+concept std_list_of_builder_point = is_std_list_of_builder_point<T>::value;
 
 auto fn_compare(float resolution) {
 	return [resolution](float y_01_beg, float y_01_at_x, float y_01_end, float x_01) {
@@ -109,19 +116,15 @@ auto add_detail(std::list<builder_point, TemporaryAllocator> points, GetValueFn 
 // [fn_get_value]: Should return the value y (0..1) of the line at any given point x (0..1)
 // [from/to]: Specify the segment of the line to construct (from=0,to=1 would construct the entire line.)
 // [resolution]: Basically specifies how detailed the line is. If drawing the line visually, [resolution] should be the rendering area of the line segment in pixels.
-// [tmp_alloc]: You need to pass in some kind of allocator to use for temporary allocations.
-template <
-	get_value_fn GetValueFn,
-	typename TemporaryAllocator
->
-auto construct(GetValueFn fn_get_value, float from, float to, XY<float> resolution, std::output_iterator<XY<float>> auto out, TemporaryAllocator& tmp_alloc) -> void {
-	auto list            = std::list<builder_point, TemporaryAllocator>{tmp_alloc};
-	const auto beg       = list.insert(list.end(), make_beg_point(fn_get_value, from));
-	const auto end       = list.insert(list.end(), make_end_point(fn_get_value, to, resolution.x));
+// [tmp_list]: You need to pass in your own empty std::list<snd::curved_line_constructor::builder_point, Alloc> to be used internally for the construction process. This is so that you can use your own special allocator for the temporary memory allocations.
+// [out]: Output iterator for the final line points scaled to the resolution.
+auto construct(get_value_fn auto fn_get_value, float from, float to, XY<float> resolution, std_list_of_builder_point auto&& tmp_list, std::output_iterator<XY<float>> auto out) -> void {
+	const auto beg       = tmp_list.insert(tmp_list.end(), make_beg_point(fn_get_value, from));
+	const auto end       = tmp_list.insert(tmp_list.end(), make_end_point(fn_get_value, to, resolution.x));
 	const auto max_depth = static_cast<int>(std::pow(resolution.x, ONE_THIRD));
 	const auto fn_xform  = fn_builder_point_to_xy(resolution.y);
-	list                 = add_detail(std::move(list), fn_get_value, beg, end, resolution.y, max_depth);
-	std::ranges::copy(list | std::views::transform(fn_xform), out);
+	tmp_list             = add_detail(std::move(tmp_list), fn_get_value, beg, end, resolution.y, max_depth);
+	std::ranges::copy(tmp_list | std::views::transform(fn_xform), out);
 }
 
 } // snd::curved_line_constructor
