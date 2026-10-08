@@ -9,6 +9,7 @@ target_sources(snd INTERFACE
 	FILES
 		include/snd/const_math.hpp
 		include/snd/convert.hpp
+		include/snd/curved-line-constructor.hpp
 		include/snd/diff_detector.hpp
 		include/snd/dup_filter.hpp
 		include/snd/ease.hpp
