@@ -8,7 +8,6 @@
 
 namespace snd::curved_line_constructor {
 
-static constexpr auto TOLERANCE  = 1.0f;
 static constexpr auto ONE_THIRD  = 1.0f / 3.0f;
 static constexpr auto TWO_THIRDS = 2.0f / 3.0f;
 
@@ -86,7 +85,7 @@ template <
 	typename Iterator = typename std::list<builder_point, TemporaryAllocator>::iterator
 >
 [[nodiscard]]
-auto add_detail(std::list<builder_point, TemporaryAllocator> points, GetValueFn fn_get_value, Iterator beg, Iterator end, float resolution, int max_depth, int depth = 0) -> decltype(auto) {
+auto add_detail(std::list<builder_point, TemporaryAllocator> points, GetValueFn fn_get_value, Iterator beg, Iterator end, float resolution, int max_depth, float tolerance = 0.1f, int depth = 0) -> decltype(auto) {
 	if (depth >= max_depth) {
 		return points;
 	}
@@ -95,7 +94,7 @@ auto add_detail(std::list<builder_point, TemporaryAllocator> points, GetValueFn 
 	const auto forward    = make_forward_point(fn_get_value, *beg, *end);
 	const auto diff_backward = fn_compare(beg->y_01, backward.y_01, end->y_01, ONE_THIRD);
 	const auto diff_forward  = fn_compare(beg->y_01, forward.y_01, end->y_01, TWO_THIRDS);
-	if (diff_backward >= TOLERANCE || diff_forward >= TOLERANCE) {
+	if (diff_backward >= tolerance || diff_forward >= tolerance) {
 		auto p0 = points.insert(end, backward);
 		auto p1 = points.insert(end, forward);
 		points = add_detail(std::move(points), fn_get_value, beg, p0, resolution, max_depth, depth + 1);
