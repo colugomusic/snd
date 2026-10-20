@@ -187,7 +187,7 @@ struct coeffs {
 [[nodiscard]] inline
 auto make_coeffs(float f, filters::gain_db gain_db, float slope, float bw, float SR) -> coeffs {
 	const auto slope_mod            = std::pow(2.0f, slope);
-	const auto M                    = db_to_linear(gain_db.v);
+	const auto M                    = db_to_linear(gain_db.v / -1.0f);
 	const auto Mpow2                = std::pow(M, 2.0f);
 	const auto recip_Mpow2          = reciprocal(Mpow2);
 	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, 2.0f);
@@ -414,7 +414,7 @@ struct state {
 [[nodiscard]] inline
 auto make_coeffs(float f, filters::gain_db gain_db, float slope, float SR) -> hilo::coeffs {
 	const auto slope_mod              = std::pow(2.0f, slope);
-	const auto M                      = db_to_linear(gain_db.v);
+	const auto M                      = db_to_linear(gain_db.v / -1.0f);
 	const auto Mpow2                  = std::pow(M, 2.0f);
 	const auto recip_Mpow2            = reciprocal(Mpow2);
 	const auto [slope1_lo, slope1_hi] = bi_clip(slope_mod, 2.0f);
