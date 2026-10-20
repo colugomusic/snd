@@ -177,6 +177,7 @@ struct tilt_coeffs {
 
 struct coeffs {
 	float F;
+	float Mpow2;
 	float recip_Mpow2;
 	float wdiv2;
 	tilt_coeffs tilt1;
@@ -215,6 +216,7 @@ auto make_coeffs(float f, filters::gain_db gain_db, float slope, float bw, float
 	const auto wdiv2                = compute_wdiv2(f, SR);
 	return {
 		.F             = f,
+		.Mpow2         = Mpow2,
 		.recip_Mpow2   = recip_Mpow2,
 		.wdiv2         = wdiv2,
 		.tilt1 = {
@@ -294,20 +296,30 @@ auto tilt(tilt_state state, float in, float wdiv2, tilt_coeffs coeffs) -> std::t
 }
 
 [[nodiscard]] inline
-auto process(band_shelf::state state, float in, const band_shelf::coeffs& coeffs) -> std::tuple<band_shelf::state, float> {
+auto process_impl(band_shelf::state state, float in, const band_shelf::coeffs& coeffs, float out_mult) -> std::tuple<band_shelf::state, float> {
 	auto signal = in;
 	std::tie(state.tilt1, signal) = tilt(state.tilt1, signal, coeffs.wdiv2, coeffs.tilt1);
 	std::tie(state.tilt2, signal) = tilt(state.tilt2, signal, coeffs.wdiv2, coeffs.tilt2);
-	signal *= coeffs.recip_Mpow2;
+	signal *= out_mult;
 	return std::make_tuple(state, signal);
 }
 
 [[nodiscard]] inline
-auto settle(band_shelf::state state, const band_shelf::coeffs& coeffs) -> band_shelf::state {
+auto settle_impl(band_shelf::state state, const band_shelf::coeffs& coeffs, float out_mult) -> band_shelf::state {
 	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
-		std::tie(state, std::ignore) = process(state, 0.0f, coeffs);
+		std::tie(state, std::ignore) = process_impl(state, 0.0f, coeffs, coeffs.recip_Mpow2);
 	}
 	return state;
+}
+
+[[nodiscard]] inline
+auto process(band_shelf::state state, float in, const band_shelf::coeffs& coeffs) -> std::tuple<band_shelf::state, float> {
+	return process_impl(state, in, coeffs, coeffs.recip_Mpow2);
+}
+
+[[nodiscard]] inline
+auto settle(band_shelf::state state, const band_shelf::coeffs& coeffs) -> band_shelf::state {
+	return settle_impl(state, coeffs, coeffs.recip_Mpow2);
 }
 
 } // snd::filters::shelving::band_shelf
@@ -338,12 +350,17 @@ auto tilt(std::complex<float> t, float f, float F, tilt_coeffs coeffs) -> std::c
 }
 
 [[nodiscard]] inline
-auto compute(const band_shelf::coeffs& coeffs, float f) -> float {
+auto compute_impl(const band_shelf::coeffs& coeffs, float f, float out_mult) -> float {
 	auto s = std::complex<float>{1.0f, 0.0f};
 	s = tilt(s, f, coeffs.F, coeffs.tilt1);
 	s = tilt(s, f, coeffs.F, coeffs.tilt2);
-	s *= coeffs.recip_Mpow2;
+	s *= out_mult;
 	return abs(s);
+}
+
+[[nodiscard]] inline
+auto compute(const band_shelf::coeffs& coeffs, float f) -> float {
+	return compute_impl(coeffs, f, coeffs.recip_Mpow2);
 }
 
 inline
@@ -539,6 +556,47 @@ auto compute(const hilo::coeffs& coeffs, float f) -> std::complex<float> {
 }
 
 } // snd::filters::shelving::hilo::tf
+
+namespace snd::filters::shelving::band_pass {
+
+struct coeffs { band_shelf::coeffs band_shelf; };
+struct state { band_shelf::state band_shelf; };
+
+[[nodiscard]] inline
+auto make_coeffs(float f, filters::gain_db gain_db, float slope, float bw, float SR) -> coeffs {
+	return {.band_shelf = band_shelf::make_coeffs(f, gain_db, slope, bw, SR)};
+}
+
+[[nodiscard]] inline
+auto process(band_pass::state state, float in, const band_pass::coeffs& coeffs) -> std::tuple<band_pass::state, float> {
+	auto signal = in;
+	std::tie(state.band_shelf, signal) = band_shelf::process_impl(state.band_shelf, signal, coeffs.band_shelf, coeffs.band_shelf.Mpow2);
+	return std::make_tuple(state, signal);
+}
+
+[[nodiscard]] inline
+auto settle(band_pass::state state, const band_pass::coeffs& coeffs) -> band_pass::state {
+	state.band_shelf = band_shelf::settle_impl(state.band_shelf, coeffs.band_shelf, coeffs.band_shelf.Mpow2);
+	return state;
+}
+
+} // snd::filters::shelving::band_pass
+
+namespace snd::filters::shelving::band_pass::tf {
+
+[[nodiscard]] inline
+auto compute(const band_pass::coeffs& coeffs, float f) -> float {
+	return abs(band_shelf::tf::compute_impl(coeffs.band_shelf, f, coeffs.band_shelf.Mpow2));
+}
+
+inline
+auto compute(const band_pass::coeffs& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
+	assert (in_omega.size() == out_magnitude.size());
+	auto fn_compute = [&coeffs](float omega) -> float { return compute(coeffs, omega); };
+	std::transform(in_omega.begin(), in_omega.end(), out_magnitude.begin(), fn_compute);
+}
+
+} // snd::filters::shelving::band_pass::tf
 
 namespace snd::filters::shelving::hi_shelf {
 
