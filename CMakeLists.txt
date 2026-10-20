@@ -15,6 +15,7 @@ target_sources(snd INTERFACE
 		include/snd/ease.hpp
 		include/snd/filters.hpp
 		include/snd/flags.hpp
+		include/snd/flush-dc.hpp
 		include/snd/frame-pos.hpp
 		include/snd/interpolation.hpp
 		include/snd/misc.hpp
