@@ -112,7 +112,7 @@ ml::DSPVectorArray<ROWS> Filter_2Pole_Allpass<ROWS>::operator()(const ml::DSPVec
 
 			auto ap = a + b + c + d + e;
 
-			flush_denormal_to_zero(ap);
+			ap = flush_denormal_to_zero(ap);
 
 			fbk_val_3_[r] = fbk_val_2_[r];
 			fbk_val_2_[r] = ap;

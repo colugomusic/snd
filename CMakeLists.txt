@@ -13,6 +13,7 @@ target_sources(snd INTERFACE
 		include/snd/diff_detector.hpp
 		include/snd/dup_filter.hpp
 		include/snd/ease.hpp
+		include/snd/filters.hpp
 		include/snd/flags.hpp
 		include/snd/frame-pos.hpp
 		include/snd/interpolation.hpp

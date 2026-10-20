@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include "snd/ease.hpp"
+#include "snd/filters.hpp"
 #include "snd/curved-line-constructor.hpp"
 
 TEST_CASE("easing functions") {

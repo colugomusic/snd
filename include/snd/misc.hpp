@@ -12,19 +12,12 @@
 #pragma warning(pop)
 
 #include "convert.hpp"
+#include "flush-dc.hpp"
 
 namespace snd {
 
 constexpr auto PI = 3.14159265358979f;
 
-
-constexpr float DENORMAL_DC = 1e-25f;
-
-inline void flush_denormal_to_zero(float& x)
-{
-	x += DENORMAL_DC;
-	x -= DENORMAL_DC;
-}
 
 template <size_t ROWS>
 inline ml::DSPVectorArray<ROWS> flush_denormal_to_zero(const ml::DSPVectorArray<ROWS>& in)
